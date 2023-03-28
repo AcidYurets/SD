@@ -16,6 +16,7 @@ const (
 
 	MsgUnauthorized = "не авторизованный доступ"
 	ErrUnauthorized = Const(MsgUnauthorized)
+	ErrInvalidToken = Const("некорректный токен")
 
 	MsgBadRequest = "ошибка параметров запроса"
 	ErrBadRequest = Const(MsgBadRequest)
@@ -25,18 +26,13 @@ const (
 	MsgJsonMarshal   = "не удалось упаковать данные в JSON"
 	ErrJsonMarshal   = Const(MsgJsonMarshal)
 
-	// DB
 	ErrDatabaseRecordNotFound = Const("запись не найдена")
 	ErrUniqueViolation        = Const("нарушение уникальности ключа")
 
-	/* Ошибки транзакций БД */
 	ErrTransactionNotActive = Const("Транзакция не активна")
 	ErrRollbackTransaction  = Const("ошибка отката изменений транзакции")
 
 	ErrValidateModel = Const("Ошибка валидации модели")
 
-	ErrDocumentRequired = Const("не указан документ")
-
-	// Права доступа
 	ErrAccessDenied = Const("недостаточно прав")
 )

@@ -7,15 +7,15 @@ import (
 )
 
 type Event struct {
-	Uuid        string        // Uuid пользователя
-	Timestamp   time.Time     // Временная метка
-	Name        string        // Название
-	Description *string       // Описание
-	Type        string        // Тип события
-	IsWholeDay  bool          // Событие на целый день?
-	Invitations Invitations   // Приглашения события
-	Tags        tag_dto.Tags  // Теги события
-	Creator     user_dto.User // Создатель события
+	Uuid        string         // Uuid пользователя
+	Timestamp   time.Time      // Временная метка
+	Name        string         // Название
+	Description *string        // Описание
+	Type        string         // Тип события
+	IsWholeDay  bool           // Событие на целый день?
+	Invitations Invitations    // Приглашения события
+	Tags        tag_dto.Tags   // Теги события
+	Creator     *user_dto.User // Создатель события
 }
 
 type Events []*Event

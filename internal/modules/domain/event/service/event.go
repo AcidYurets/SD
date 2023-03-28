@@ -3,13 +3,14 @@ package service
 import (
 	"calend/internal/models/access"
 	"calend/internal/models/err_const"
+	"calend/internal/models/session"
 	"calend/internal/modules/domain/event/dto"
 	"context"
 	"fmt"
 	"strings"
 )
 
-//go:generate mockgen -destination mock_test.go -package service . IEventRepo
+//go:generate mockgen -destination mock_test.go -package service . IEventRepo IInvitationRepo
 
 type IEventRepo interface {
 	GetByUuid(ctx context.Context, uuid string) (*dto.Event, error)
@@ -50,7 +51,10 @@ func (r *EventService) GetByUuid(ctx context.Context, uuid string) (*dto.Event, 
 }
 
 func (r *EventService) ListAvailable(ctx context.Context) (dto.Events, error) {
-	userUuid := getUserUuidFromCtx(ctx)
+	userUuid, err := getUserUuidFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	return r.eventRepo.ListAvailable(ctx, userUuid)
 }
@@ -174,7 +178,10 @@ func (r *EventService) Delete(ctx context.Context, uuid string) error {
 }
 
 func (r *EventService) checkAvailable(ctx context.Context, eventUuid string, opCode string) error {
-	userUuid := getUserUuidFromCtx(ctx)
+	userUuid, err := getUserUuidFromCtx(ctx)
+	if err != nil {
+		return err
+	}
 
 	event, err := r.eventRepo.GetByUuid(ctx, eventUuid)
 	if err != nil {
@@ -199,9 +206,11 @@ func (r *EventService) checkAvailable(ctx context.Context, eventUuid string, opC
 	return fmt.Errorf("%w: код операции = <%s>", err_const.ErrAccessDenied, opCode)
 }
 
-func getUserUuidFromCtx(ctx context.Context) string {
-	// TODO: сессия из контекста
-	userUuid := ""
+func getUserUuidFromCtx(ctx context.Context) (string, error) {
+	s, ok := session.GetSessionFromCtx(ctx)
+	if !ok {
+		return "", fmt.Errorf("cессия отсутствует в контексте")
+	}
 
-	return userUuid
+	return s.UserUuid, nil
 }

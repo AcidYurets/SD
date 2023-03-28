@@ -19,7 +19,7 @@ func (s Type) String() string {
 func (s Type) IsValid() bool {
 	all := ReadAccess + InviteAccess + UpdateAccess + DeleteAccess
 	for _, token := range s {
-		if !strings.ContainsRune(all, token) {
+		if !strings.ContainsRune(string(all), token) {
 			return false
 		}
 	}
