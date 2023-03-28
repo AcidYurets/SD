@@ -1,6 +1,7 @@
 package service
 
 import (
+	"calend/internal/models/access"
 	"calend/internal/modules/domain/access_right/dto"
 	"context"
 	"github.com/golang/mock/gomock"
@@ -14,7 +15,7 @@ func TestAccessRightService_GetByCode(t *testing.T) {
 	repo := NewMockIAccessRightRepo(ctrl)
 	service := NewAccessRightService(repo)
 
-	code := "r"
+	code := access.Type("r")
 	expectedAccessRight := &dto.AccessRight{
 		Code:        code,
 		Description: "Право только на чтение информации о событии",
@@ -35,11 +36,11 @@ func TestAccessRightService_List(t *testing.T) {
 
 	expectedAccessRights := dto.AccessRights{
 		&dto.AccessRight{
-			Code:        "r",
+			Code:        access.Type("r"),
 			Description: "Право только на чтение информации о событии",
 		},
 		&dto.AccessRight{
-			Code:        "ri",
+			Code:        access.Type("ri"),
 			Description: "Право на чтение информации о событии и на приглашение других пользователей",
 		},
 	}

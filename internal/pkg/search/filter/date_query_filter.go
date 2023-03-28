@@ -33,11 +33,11 @@ func (f *DateQueryFilter) Build(field string, b Builder) {
 
 		switch {
 		case f.From != nil && f.To != nil:
-			b.Range(field, f.From, f.To, f.IncludeLower, f.IncludeUpper)
+			b.Range(field, f.From, f.To)
 		case f.From != nil:
-			b.From(field, f.From, f.IncludeLower)
+			b.From(field, f.From)
 		case f.To != nil:
-			b.To(field, f.To, f.IncludeUpper)
+			b.To(field, f.To)
 		}
 	}
 

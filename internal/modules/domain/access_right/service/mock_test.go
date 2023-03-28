@@ -5,6 +5,7 @@
 package service
 
 import (
+	access "calend/internal/models/access"
 	dto "calend/internal/modules/domain/access_right/dto"
 	context "context"
 	reflect "reflect"
@@ -36,7 +37,7 @@ func (m *MockIAccessRightRepo) EXPECT() *MockIAccessRightRepoMockRecorder {
 }
 
 // GetByCode mocks base method.
-func (m *MockIAccessRightRepo) GetByCode(arg0 context.Context, arg1 string) (*dto.AccessRight, error) {
+func (m *MockIAccessRightRepo) GetByCode(arg0 context.Context, arg1 access.Type) (*dto.AccessRight, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByCode", arg0, arg1)
 	ret0, _ := ret[0].(*dto.AccessRight)

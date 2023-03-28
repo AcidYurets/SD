@@ -10,7 +10,8 @@ import (
 	"strings"
 )
 
-//go:generate mockgen -destination mock_test.go -package service . IEventRepo IInvitationRepo
+//go:generate mockgen -destination mock_event_test.go -package service . IEventRepo
+//go:generate mockgen -destination mock_invitation_test.go -package service . IInvitationRepo
 
 type IEventRepo interface {
 	GetByUuid(ctx context.Context, uuid string) (*dto.Event, error)
@@ -50,6 +51,9 @@ func (r *EventService) GetByUuid(ctx context.Context, uuid string) (*dto.Event, 
 	return r.eventRepo.GetByUuid(ctx, uuid)
 }
 
+// ListAvailable ищет все доступные пользователю события, т.е.
+//  1. события, которые он создал;
+//  2. события, к которым он приглашен.
 func (r *EventService) ListAvailable(ctx context.Context) (dto.Events, error) {
 	userUuid, err := getUserUuidFromCtx(ctx)
 	if err != nil {
@@ -177,7 +181,7 @@ func (r *EventService) Delete(ctx context.Context, uuid string) error {
 	return nil
 }
 
-func (r *EventService) checkAvailable(ctx context.Context, eventUuid string, opCode string) error {
+func (r *EventService) checkAvailable(ctx context.Context, eventUuid string, opCode access.Type) error {
 	userUuid, err := getUserUuidFromCtx(ctx)
 	if err != nil {
 		return err
@@ -197,7 +201,7 @@ func (r *EventService) checkAvailable(ctx context.Context, eventUuid string, opC
 		// Если пользователь приглашен к событию, то проверяем его права доступа
 		if inv.User.Uuid == userUuid {
 			// Если есть необходимое право
-			if strings.Contains(inv.AccessRight.Code.String(), opCode) {
+			if strings.Contains(inv.AccessRight.Code.String(), string(opCode)) {
 				return nil
 			}
 		}

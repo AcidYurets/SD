@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-func TestUserService_SearchEvents(t *testing.T) {
+func TestSearchService_SearchEvents(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	repo := NewMockISearchRepo(ctrl)
