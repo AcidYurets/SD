@@ -1,8 +1,10 @@
 package dto
 
+import "calend/internal/models/access"
+
 type AccessRight struct {
-	Code        AccessCode // Код
-	Description string     // Описание
+	Code        access.Type // Код
+	Description string      // Описание
 }
 
 type AccessRights []*AccessRight

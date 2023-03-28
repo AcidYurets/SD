@@ -1,10 +1,12 @@
 package service
 
 import (
+	"calend/internal/models/access"
 	"calend/internal/models/err_const"
 	"calend/internal/modules/domain/event/dto"
 	"context"
 	"fmt"
+	"strings"
 )
 
 //go:generate mockgen -destination mock_test.go -package service . IEventRepo
@@ -20,10 +22,6 @@ type IEventRepo interface {
 	//  1. события, которые он создал;
 	//  2. события, к которым он приглашен.
 	ListAvailable(ctx context.Context, userUuid string) (dto.Events, error)
-	// IsAvailable проверяет, доступно ли событие пользователю, т.е.
-	//  1. создал ли он это событие?
-	//  2. приглашен ли он к этому событию?
-	IsAvailable(ctx context.Context, eventUuid string, userUuid string) (bool, error)
 }
 
 type IInvitationRepo interface {
@@ -44,7 +42,7 @@ func NewEventService(eRepo IEventRepo, iRepo IInvitationRepo) *EventService {
 }
 
 func (r *EventService) GetByUuid(ctx context.Context, uuid string) (*dto.Event, error) {
-	if err := r.checkAvailable(ctx, uuid); err != nil {
+	if err := r.checkAvailable(ctx, uuid, access.ReadAccess); err != nil {
 		return nil, err
 	}
 
@@ -52,8 +50,7 @@ func (r *EventService) GetByUuid(ctx context.Context, uuid string) (*dto.Event, 
 }
 
 func (r *EventService) ListAvailable(ctx context.Context) (dto.Events, error) {
-	// TODO: сессия из контекста
-	userUuid := ""
+	userUuid := getUserUuidFromCtx(ctx)
 
 	return r.eventRepo.ListAvailable(ctx, userUuid)
 }
@@ -90,8 +87,37 @@ func (r *EventService) CreateWithInvitations(ctx context.Context, newEvent *dto.
 	return eventWithInvs, nil
 }
 
+func (r *EventService) AddInvitations(ctx context.Context, uuid string, newInvs dto.CreateEventInvitations) (*dto.Event, error) {
+	if err := r.checkAvailable(ctx, uuid, access.InviteAccess); err != nil {
+		return nil, err
+	}
+
+	var createInvs dto.CreateInvitations
+	for _, inv := range newInvs {
+		createInv := &dto.CreateInvitation{
+			EventUuid:       uuid,
+			UserUuid:        inv.UserUuid,
+			AccessRightCode: inv.AccessRightCode,
+		}
+		createInvs = append(createInvs, createInv)
+	}
+
+	// Создаем приглашения для события
+	if _, err := r.invRepo.CreateBulk(ctx, createInvs); err != nil {
+		return nil, fmt.Errorf("ошибка при создании приглашений: %w", err)
+	}
+
+	// Получаем событие с приглашениями
+	eventWithInvs, err := r.eventRepo.GetByUuid(ctx, uuid)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при получении события: %w", err)
+	}
+
+	return eventWithInvs, nil
+}
+
 func (r *EventService) Update(ctx context.Context, uuid string, updEvent *dto.UpdateEvent, newInvs dto.CreateEventInvitations) (*dto.Event, error) {
-	if err := r.checkAvailable(ctx, uuid); err != nil {
+	if err := r.checkAvailable(ctx, uuid, access.UpdateAccess); err != nil {
 		return nil, err
 	}
 
@@ -130,7 +156,7 @@ func (r *EventService) Update(ctx context.Context, uuid string, updEvent *dto.Up
 }
 
 func (r *EventService) Delete(ctx context.Context, uuid string) error {
-	if err := r.checkAvailable(ctx, uuid); err != nil {
+	if err := r.checkAvailable(ctx, uuid, access.DeleteAccess); err != nil {
 		return err
 	}
 
@@ -148,28 +174,34 @@ func (r *EventService) Delete(ctx context.Context, uuid string) error {
 }
 
 func (r *EventService) checkAvailable(ctx context.Context, eventUuid string, opCode string) error {
-	// TODO: сессия из контекста
-	userUuid := ""
+	userUuid := getUserUuidFromCtx(ctx)
 
 	event, err := r.eventRepo.GetByUuid(ctx, eventUuid)
 	if err != nil {
-		return err
+		return fmt.Errorf("ошибка при получении события: %w", err)
+	}
+
+	// Если текущий пользователь -- создатель, то у него полный доступ
+	if event.Creator.Uuid == userUuid {
+		return nil
 	}
 
 	for _, inv := range event.Invitations {
-		// Если пользователь приглашен к событию -- проверяем его права доступа
+		// Если пользователь приглашен к событию, то проверяем его права доступа
 		if inv.User.Uuid == userUuid {
-			inv.AccessRight.Code
+			// Если есть необходимое право
+			if strings.Contains(inv.AccessRight.Code.String(), opCode) {
+				return nil
+			}
 		}
 	}
 
-	available, err := r.eventRepo.IsAvailable(ctx, eventUuid, userUuid)
-	if err != nil {
-		return fmt.Errorf("ошибка при проверки доступности события: %w", err)
-	}
-	if !available {
-		return fmt.Errorf("%w: код операции = <%s>", err_const.ErrAccessDenied, opCode)
-	}
+	return fmt.Errorf("%w: код операции = <%s>", err_const.ErrAccessDenied, opCode)
+}
 
-	return nil
+func getUserUuidFromCtx(ctx context.Context) string {
+	// TODO: сессия из контекста
+	userUuid := ""
+
+	return userUuid
 }
