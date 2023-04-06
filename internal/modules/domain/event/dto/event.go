@@ -7,7 +7,7 @@ import (
 )
 
 type Event struct {
-	Uuid        string         // Uuid пользователя
+	Uuid        string         // Uuid события
 	Timestamp   time.Time      // Временная метка
 	Name        string         // Название
 	Description *string        // Описание
@@ -22,14 +22,12 @@ type Events []*Event
 
 // CreateEvent модель для создания события без приглашений
 type CreateEvent struct {
-	Uuid        string    // Uuid пользователя
 	Timestamp   time.Time // Временная метка
 	Name        string    // Название
 	Description *string   // Описание
 	Type        string    // Тип события
 	IsWholeDay  bool      // Событие на целый день?
 	TagUuids    []string  // Массив Uuid-ов тегов события
-	CreatorUuid string    // Создатель события
 }
 
 // UpdateEvent модель для создания события без приглашений

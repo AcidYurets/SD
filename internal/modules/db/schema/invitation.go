@@ -30,5 +30,8 @@ func (Invitation) Edges() []ent.Edge {
 		edge.From("user", User.Type).
 			Ref("invitations").
 			Unique(),
+		edge.From("access_right", AccessRight.Type).
+			Ref("invitations").
+			Unique(),
 	}
 }

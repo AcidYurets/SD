@@ -2,15 +2,33 @@
 
 package user
 
+import (
+	"time"
+
+	"entgo.io/ent"
+)
+
 const (
 	// Label holds the string label denoting the user type in the database.
 	Label = "user"
 	// FieldID holds the string denoting the id field in the database.
-	FieldID = "id"
+	FieldID = "uuid"
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
+	FieldCreatedAt = "created_at"
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
+	FieldUpdatedAt = "updated_at"
+	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
+	FieldDeletedAt = "deleted_at"
+	// FieldPhone holds the string denoting the phone field in the database.
+	FieldPhone = "phone"
+	// FieldLogin holds the string denoting the login field in the database.
+	FieldLogin = "login"
+	// FieldPasswordHash holds the string denoting the password_hash field in the database.
+	FieldPasswordHash = "password_hash"
 	// EdgeInvitations holds the string denoting the invitations edge name in mutations.
 	EdgeInvitations = "invitations"
-	// InvitationFieldID holds the string denoting the ID field of the Invitation.
-	InvitationFieldID = "uuid"
+	// EdgeCreatedEvents holds the string denoting the created_events edge name in mutations.
+	EdgeCreatedEvents = "created_events"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// InvitationsTable is the table that holds the invitations relation/edge.
@@ -20,11 +38,24 @@ const (
 	InvitationsInverseTable = "invitations"
 	// InvitationsColumn is the table column denoting the invitations relation/edge.
 	InvitationsColumn = "user_uuid"
+	// CreatedEventsTable is the table that holds the created_events relation/edge.
+	CreatedEventsTable = "events"
+	// CreatedEventsInverseTable is the table name for the Event entity.
+	// It exists in this package in order to avoid circular dependency with the "event" package.
+	CreatedEventsInverseTable = "events"
+	// CreatedEventsColumn is the table column denoting the created_events relation/edge.
+	CreatedEventsColumn = "creator_uuid"
 )
 
 // Columns holds all SQL columns for user fields.
 var Columns = []string{
 	FieldID,
+	FieldCreatedAt,
+	FieldUpdatedAt,
+	FieldDeletedAt,
+	FieldPhone,
+	FieldLogin,
+	FieldPasswordHash,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -36,3 +67,21 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+// Note that the variables below are initialized by the runtime
+// package on the initialization of the application. Therefore,
+// it should be imported in the main as follows:
+//
+//	import _ "calend/internal/modules/db/ent/runtime"
+var (
+	Hooks        [1]ent.Hook
+	Interceptors [1]ent.Interceptor
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
+	DefaultCreatedAt func() time.Time
+	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
+	DefaultUpdatedAt func() time.Time
+	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
+	UpdateDefaultUpdatedAt func() time.Time
+	// DefaultID holds the default value on creation for the "id" field.
+	DefaultID func() string
+)

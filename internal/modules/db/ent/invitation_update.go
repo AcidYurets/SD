@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"calend/internal/modules/db/ent/accessright"
 	"calend/internal/modules/db/ent/event"
 	"calend/internal/modules/db/ent/invitation"
 	"calend/internal/modules/db/ent/predicate"
@@ -49,13 +50,13 @@ func (iu *InvitationUpdate) SetEvent(e *Event) *InvitationUpdate {
 }
 
 // SetUserID sets the "user" edge to the User entity by ID.
-func (iu *InvitationUpdate) SetUserID(id int) *InvitationUpdate {
+func (iu *InvitationUpdate) SetUserID(id string) *InvitationUpdate {
 	iu.mutation.SetUserID(id)
 	return iu
 }
 
 // SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
-func (iu *InvitationUpdate) SetNillableUserID(id *int) *InvitationUpdate {
+func (iu *InvitationUpdate) SetNillableUserID(id *string) *InvitationUpdate {
 	if id != nil {
 		iu = iu.SetUserID(*id)
 	}
@@ -65,6 +66,25 @@ func (iu *InvitationUpdate) SetNillableUserID(id *int) *InvitationUpdate {
 // SetUser sets the "user" edge to the User entity.
 func (iu *InvitationUpdate) SetUser(u *User) *InvitationUpdate {
 	return iu.SetUserID(u.ID)
+}
+
+// SetAccessRightID sets the "access_right" edge to the AccessRight entity by ID.
+func (iu *InvitationUpdate) SetAccessRightID(id string) *InvitationUpdate {
+	iu.mutation.SetAccessRightID(id)
+	return iu
+}
+
+// SetNillableAccessRightID sets the "access_right" edge to the AccessRight entity by ID if the given value is not nil.
+func (iu *InvitationUpdate) SetNillableAccessRightID(id *string) *InvitationUpdate {
+	if id != nil {
+		iu = iu.SetAccessRightID(*id)
+	}
+	return iu
+}
+
+// SetAccessRight sets the "access_right" edge to the AccessRight entity.
+func (iu *InvitationUpdate) SetAccessRight(a *AccessRight) *InvitationUpdate {
+	return iu.SetAccessRightID(a.ID)
 }
 
 // Mutation returns the InvitationMutation object of the builder.
@@ -81,6 +101,12 @@ func (iu *InvitationUpdate) ClearEvent() *InvitationUpdate {
 // ClearUser clears the "user" edge to the User entity.
 func (iu *InvitationUpdate) ClearUser() *InvitationUpdate {
 	iu.mutation.ClearUser()
+	return iu
+}
+
+// ClearAccessRight clears the "access_right" edge to the AccessRight entity.
+func (iu *InvitationUpdate) ClearAccessRight() *InvitationUpdate {
+	iu.mutation.ClearAccessRight()
 	return iu
 }
 
@@ -157,7 +183,7 @@ func (iu *InvitationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{invitation.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -170,7 +196,36 @@ func (iu *InvitationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{invitation.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if iu.mutation.AccessRightCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   invitation.AccessRightTable,
+			Columns: []string{invitation.AccessRightColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accessright.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := iu.mutation.AccessRightIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   invitation.AccessRightTable,
+			Columns: []string{invitation.AccessRightColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accessright.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -218,13 +273,13 @@ func (iuo *InvitationUpdateOne) SetEvent(e *Event) *InvitationUpdateOne {
 }
 
 // SetUserID sets the "user" edge to the User entity by ID.
-func (iuo *InvitationUpdateOne) SetUserID(id int) *InvitationUpdateOne {
+func (iuo *InvitationUpdateOne) SetUserID(id string) *InvitationUpdateOne {
 	iuo.mutation.SetUserID(id)
 	return iuo
 }
 
 // SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
-func (iuo *InvitationUpdateOne) SetNillableUserID(id *int) *InvitationUpdateOne {
+func (iuo *InvitationUpdateOne) SetNillableUserID(id *string) *InvitationUpdateOne {
 	if id != nil {
 		iuo = iuo.SetUserID(*id)
 	}
@@ -234,6 +289,25 @@ func (iuo *InvitationUpdateOne) SetNillableUserID(id *int) *InvitationUpdateOne 
 // SetUser sets the "user" edge to the User entity.
 func (iuo *InvitationUpdateOne) SetUser(u *User) *InvitationUpdateOne {
 	return iuo.SetUserID(u.ID)
+}
+
+// SetAccessRightID sets the "access_right" edge to the AccessRight entity by ID.
+func (iuo *InvitationUpdateOne) SetAccessRightID(id string) *InvitationUpdateOne {
+	iuo.mutation.SetAccessRightID(id)
+	return iuo
+}
+
+// SetNillableAccessRightID sets the "access_right" edge to the AccessRight entity by ID if the given value is not nil.
+func (iuo *InvitationUpdateOne) SetNillableAccessRightID(id *string) *InvitationUpdateOne {
+	if id != nil {
+		iuo = iuo.SetAccessRightID(*id)
+	}
+	return iuo
+}
+
+// SetAccessRight sets the "access_right" edge to the AccessRight entity.
+func (iuo *InvitationUpdateOne) SetAccessRight(a *AccessRight) *InvitationUpdateOne {
+	return iuo.SetAccessRightID(a.ID)
 }
 
 // Mutation returns the InvitationMutation object of the builder.
@@ -250,6 +324,12 @@ func (iuo *InvitationUpdateOne) ClearEvent() *InvitationUpdateOne {
 // ClearUser clears the "user" edge to the User entity.
 func (iuo *InvitationUpdateOne) ClearUser() *InvitationUpdateOne {
 	iuo.mutation.ClearUser()
+	return iuo
+}
+
+// ClearAccessRight clears the "access_right" edge to the AccessRight entity.
+func (iuo *InvitationUpdateOne) ClearAccessRight() *InvitationUpdateOne {
+	iuo.mutation.ClearAccessRight()
 	return iuo
 }
 
@@ -356,7 +436,7 @@ func (iuo *InvitationUpdateOne) sqlSave(ctx context.Context) (_node *Invitation,
 			Columns: []string{invitation.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -369,7 +449,36 @@ func (iuo *InvitationUpdateOne) sqlSave(ctx context.Context) (_node *Invitation,
 			Columns: []string{invitation.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if iuo.mutation.AccessRightCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   invitation.AccessRightTable,
+			Columns: []string{invitation.AccessRightColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accessright.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := iuo.mutation.AccessRightIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   invitation.AccessRightTable,
+			Columns: []string{invitation.AccessRightColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accessright.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

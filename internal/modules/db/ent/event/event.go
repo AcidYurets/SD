@@ -33,6 +33,8 @@ const (
 	EdgeTags = "tags"
 	// EdgeInvitations holds the string denoting the invitations edge name in mutations.
 	EdgeInvitations = "invitations"
+	// EdgeCreator holds the string denoting the creator edge name in mutations.
+	EdgeCreator = "creator"
 	// Table holds the table name of the event in the database.
 	Table = "events"
 	// TagsTable is the table that holds the tags relation/edge. The primary key declared below.
@@ -47,6 +49,13 @@ const (
 	InvitationsInverseTable = "invitations"
 	// InvitationsColumn is the table column denoting the invitations relation/edge.
 	InvitationsColumn = "event_uuid"
+	// CreatorTable is the table that holds the creator relation/edge.
+	CreatorTable = "events"
+	// CreatorInverseTable is the table name for the User entity.
+	// It exists in this package in order to avoid circular dependency with the "user" package.
+	CreatorInverseTable = "users"
+	// CreatorColumn is the table column denoting the creator relation/edge.
+	CreatorColumn = "creator_uuid"
 )
 
 // Columns holds all SQL columns for event fields.
@@ -62,6 +71,12 @@ var Columns = []string{
 	FieldIsWholeDay,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "events"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"creator_uuid",
+}
+
 var (
 	// TagsPrimaryKey and TagsColumn2 are the table columns denoting the
 	// primary key for the tags relation (M2M).
@@ -72,6 +87,11 @@ var (
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}

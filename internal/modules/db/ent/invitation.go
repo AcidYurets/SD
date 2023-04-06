@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"calend/internal/modules/db/ent/accessright"
 	"calend/internal/modules/db/ent/event"
 	"calend/internal/modules/db/ent/invitation"
 	"calend/internal/modules/db/ent/user"
@@ -19,9 +20,10 @@ type Invitation struct {
 	ID string `json:"id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the InvitationQuery when eager-loading is set.
-	Edges      InvitationEdges `json:"edges"`
-	event_uuid *string
-	user_uuid  *int
+	Edges             InvitationEdges `json:"edges"`
+	access_right_code *string
+	event_uuid        *string
+	user_uuid         *string
 }
 
 // InvitationEdges holds the relations/edges for other nodes in the graph.
@@ -30,9 +32,11 @@ type InvitationEdges struct {
 	Event *Event `json:"event,omitempty"`
 	// User holds the value of the user edge.
 	User *User `json:"user,omitempty"`
+	// AccessRight holds the value of the access_right edge.
+	AccessRight *AccessRight `json:"access_right,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // EventOrErr returns the Event value or an error if the edge
@@ -61,6 +65,19 @@ func (e InvitationEdges) UserOrErr() (*User, error) {
 	return nil, &NotLoadedError{edge: "user"}
 }
 
+// AccessRightOrErr returns the AccessRight value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e InvitationEdges) AccessRightOrErr() (*AccessRight, error) {
+	if e.loadedTypes[2] {
+		if e.AccessRight == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: accessright.Label}
+		}
+		return e.AccessRight, nil
+	}
+	return nil, &NotLoadedError{edge: "access_right"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Invitation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -68,10 +85,12 @@ func (*Invitation) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case invitation.FieldID:
 			values[i] = new(sql.NullString)
-		case invitation.ForeignKeys[0]: // event_uuid
+		case invitation.ForeignKeys[0]: // access_right_code
 			values[i] = new(sql.NullString)
-		case invitation.ForeignKeys[1]: // user_uuid
-			values[i] = new(sql.NullInt64)
+		case invitation.ForeignKeys[1]: // event_uuid
+			values[i] = new(sql.NullString)
+		case invitation.ForeignKeys[2]: // user_uuid
+			values[i] = new(sql.NullString)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Invitation", columns[i])
 		}
@@ -95,17 +114,24 @@ func (i *Invitation) assignValues(columns []string, values []any) error {
 			}
 		case invitation.ForeignKeys[0]:
 			if value, ok := values[j].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field access_right_code", values[j])
+			} else if value.Valid {
+				i.access_right_code = new(string)
+				*i.access_right_code = value.String
+			}
+		case invitation.ForeignKeys[1]:
+			if value, ok := values[j].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field event_uuid", values[j])
 			} else if value.Valid {
 				i.event_uuid = new(string)
 				*i.event_uuid = value.String
 			}
-		case invitation.ForeignKeys[1]:
-			if value, ok := values[j].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field user_uuid", value)
+		case invitation.ForeignKeys[2]:
+			if value, ok := values[j].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field user_uuid", values[j])
 			} else if value.Valid {
-				i.user_uuid = new(int)
-				*i.user_uuid = int(value.Int64)
+				i.user_uuid = new(string)
+				*i.user_uuid = value.String
 			}
 		}
 	}
@@ -120,6 +146,11 @@ func (i *Invitation) QueryEvent() *EventQuery {
 // QueryUser queries the "user" edge of the Invitation entity.
 func (i *Invitation) QueryUser() *UserQuery {
 	return NewInvitationClient(i.config).QueryUser(i)
+}
+
+// QueryAccessRight queries the "access_right" edge of the Invitation entity.
+func (i *Invitation) QueryAccessRight() *AccessRightQuery {
+	return NewInvitationClient(i.config).QueryAccessRight(i)
 }
 
 // Update returns a builder for updating this Invitation.

@@ -275,7 +275,7 @@ func (c *AccessRightClient) UpdateOne(ar *AccessRight) *AccessRightUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *AccessRightClient) UpdateOneID(id int) *AccessRightUpdateOne {
+func (c *AccessRightClient) UpdateOneID(id string) *AccessRightUpdateOne {
 	mutation := newAccessRightMutation(c.config, OpUpdateOne, withAccessRightID(id))
 	return &AccessRightUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -292,7 +292,7 @@ func (c *AccessRightClient) DeleteOne(ar *AccessRight) *AccessRightDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *AccessRightClient) DeleteOneID(id int) *AccessRightDeleteOne {
+func (c *AccessRightClient) DeleteOneID(id string) *AccessRightDeleteOne {
 	builder := c.Delete().Where(accessright.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -309,17 +309,33 @@ func (c *AccessRightClient) Query() *AccessRightQuery {
 }
 
 // Get returns a AccessRight entity by its id.
-func (c *AccessRightClient) Get(ctx context.Context, id int) (*AccessRight, error) {
+func (c *AccessRightClient) Get(ctx context.Context, id string) (*AccessRight, error) {
 	return c.Query().Where(accessright.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *AccessRightClient) GetX(ctx context.Context, id int) *AccessRight {
+func (c *AccessRightClient) GetX(ctx context.Context, id string) *AccessRight {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryInvitations queries the invitations edge of a AccessRight.
+func (c *AccessRightClient) QueryInvitations(ar *AccessRight) *InvitationQuery {
+	query := (&InvitationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ar.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(accessright.Table, accessright.FieldID, id),
+			sqlgraph.To(invitation.Table, invitation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, accessright.InvitationsTable, accessright.InvitationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(ar.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.
@@ -472,6 +488,22 @@ func (c *EventClient) QueryInvitations(e *Event) *InvitationQuery {
 	return query
 }
 
+// QueryCreator queries the creator edge of a Event.
+func (c *EventClient) QueryCreator(e *Event) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := e.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(event.Table, event.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, event.CreatorTable, event.CreatorColumn),
+		)
+		fromV = sqlgraph.Neighbors(e.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *EventClient) Hooks() []Hook {
 	hooks := c.hooks.Event
@@ -617,6 +649,22 @@ func (c *InvitationClient) QueryUser(i *Invitation) *UserQuery {
 			sqlgraph.From(invitation.Table, invitation.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, invitation.UserTable, invitation.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAccessRight queries the access_right edge of a Invitation.
+func (c *InvitationClient) QueryAccessRight(i *Invitation) *AccessRightQuery {
+	query := (&AccessRightClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := i.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(invitation.Table, invitation.FieldID, id),
+			sqlgraph.To(accessright.Table, accessright.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, invitation.AccessRightTable, invitation.AccessRightColumn),
 		)
 		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
 		return fromV, nil
@@ -831,7 +879,7 @@ func (c *UserClient) UpdateOne(u *User) *UserUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *UserClient) UpdateOneID(id int) *UserUpdateOne {
+func (c *UserClient) UpdateOneID(id string) *UserUpdateOne {
 	mutation := newUserMutation(c.config, OpUpdateOne, withUserID(id))
 	return &UserUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -848,7 +896,7 @@ func (c *UserClient) DeleteOne(u *User) *UserDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *UserClient) DeleteOneID(id int) *UserDeleteOne {
+func (c *UserClient) DeleteOneID(id string) *UserDeleteOne {
 	builder := c.Delete().Where(user.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -865,12 +913,12 @@ func (c *UserClient) Query() *UserQuery {
 }
 
 // Get returns a User entity by its id.
-func (c *UserClient) Get(ctx context.Context, id int) (*User, error) {
+func (c *UserClient) Get(ctx context.Context, id string) (*User, error) {
 	return c.Query().Where(user.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *UserClient) GetX(ctx context.Context, id int) *User {
+func (c *UserClient) GetX(ctx context.Context, id string) *User {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -894,14 +942,32 @@ func (c *UserClient) QueryInvitations(u *User) *InvitationQuery {
 	return query
 }
 
+// QueryCreatedEvents queries the created_events edge of a User.
+func (c *UserClient) QueryCreatedEvents(u *User) *EventQuery {
+	query := (&EventClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(event.Table, event.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CreatedEventsTable, user.CreatedEventsColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
-	return c.hooks.User
+	hooks := c.hooks.User
+	return append(hooks[:len(hooks):len(hooks)], user.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
 func (c *UserClient) Interceptors() []Interceptor {
-	return c.inters.User
+	inters := c.inters.User
+	return append(inters[:len(inters):len(inters)], user.Interceptors[:]...)
 }
 
 func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error) {

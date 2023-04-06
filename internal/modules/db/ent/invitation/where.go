@@ -107,8 +107,35 @@ func HasUserWith(preds ...predicate.User) predicate.Invitation {
 	return predicate.Invitation(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(UserInverseTable, UserFieldID),
+			sqlgraph.To(UserInverseTable, FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasAccessRight applies the HasEdge predicate on the "access_right" edge.
+func HasAccessRight() predicate.Invitation {
+	return predicate.Invitation(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, AccessRightTable, AccessRightColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAccessRightWith applies the HasEdge predicate on the "access_right" edge with a given conditions (other predicates).
+func HasAccessRightWith(preds ...predicate.AccessRight) predicate.Invitation {
+	return predicate.Invitation(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(AccessRightInverseTable, AccessRightFieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, AccessRightTable, AccessRightColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

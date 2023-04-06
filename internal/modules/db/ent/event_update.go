@@ -7,6 +7,7 @@ import (
 	"calend/internal/modules/db/ent/invitation"
 	"calend/internal/modules/db/ent/predicate"
 	"calend/internal/modules/db/ent/tag"
+	"calend/internal/modules/db/ent/user"
 	"context"
 	"errors"
 	"fmt"
@@ -130,6 +131,25 @@ func (eu *EventUpdate) AddInvitations(i ...*Invitation) *EventUpdate {
 	return eu.AddInvitationIDs(ids...)
 }
 
+// SetCreatorID sets the "creator" edge to the User entity by ID.
+func (eu *EventUpdate) SetCreatorID(id string) *EventUpdate {
+	eu.mutation.SetCreatorID(id)
+	return eu
+}
+
+// SetNillableCreatorID sets the "creator" edge to the User entity by ID if the given value is not nil.
+func (eu *EventUpdate) SetNillableCreatorID(id *string) *EventUpdate {
+	if id != nil {
+		eu = eu.SetCreatorID(*id)
+	}
+	return eu
+}
+
+// SetCreator sets the "creator" edge to the User entity.
+func (eu *EventUpdate) SetCreator(u *User) *EventUpdate {
+	return eu.SetCreatorID(u.ID)
+}
+
 // Mutation returns the EventMutation object of the builder.
 func (eu *EventUpdate) Mutation() *EventMutation {
 	return eu.mutation
@@ -175,6 +195,12 @@ func (eu *EventUpdate) RemoveInvitations(i ...*Invitation) *EventUpdate {
 		ids[j] = i[j].ID
 	}
 	return eu.RemoveInvitationIDs(ids...)
+}
+
+// ClearCreator clears the "creator" edge to the User entity.
+func (eu *EventUpdate) ClearCreator() *EventUpdate {
+	eu.mutation.ClearCreator()
+	return eu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -345,6 +371,35 @@ func (eu *EventUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if eu.mutation.CreatorCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   event.CreatorTable,
+			Columns: []string{event.CreatorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := eu.mutation.CreatorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   event.CreatorTable,
+			Columns: []string{event.CreatorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, eu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{event.Label}
@@ -465,6 +520,25 @@ func (euo *EventUpdateOne) AddInvitations(i ...*Invitation) *EventUpdateOne {
 	return euo.AddInvitationIDs(ids...)
 }
 
+// SetCreatorID sets the "creator" edge to the User entity by ID.
+func (euo *EventUpdateOne) SetCreatorID(id string) *EventUpdateOne {
+	euo.mutation.SetCreatorID(id)
+	return euo
+}
+
+// SetNillableCreatorID sets the "creator" edge to the User entity by ID if the given value is not nil.
+func (euo *EventUpdateOne) SetNillableCreatorID(id *string) *EventUpdateOne {
+	if id != nil {
+		euo = euo.SetCreatorID(*id)
+	}
+	return euo
+}
+
+// SetCreator sets the "creator" edge to the User entity.
+func (euo *EventUpdateOne) SetCreator(u *User) *EventUpdateOne {
+	return euo.SetCreatorID(u.ID)
+}
+
 // Mutation returns the EventMutation object of the builder.
 func (euo *EventUpdateOne) Mutation() *EventMutation {
 	return euo.mutation
@@ -510,6 +584,12 @@ func (euo *EventUpdateOne) RemoveInvitations(i ...*Invitation) *EventUpdateOne {
 		ids[j] = i[j].ID
 	}
 	return euo.RemoveInvitationIDs(ids...)
+}
+
+// ClearCreator clears the "creator" edge to the User entity.
+func (euo *EventUpdateOne) ClearCreator() *EventUpdateOne {
+	euo.mutation.ClearCreator()
+	return euo
 }
 
 // Where appends a list predicates to the EventUpdate builder.
@@ -703,6 +783,35 @@ func (euo *EventUpdateOne) sqlSave(ctx context.Context) (_node *Event, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if euo.mutation.CreatorCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   event.CreatorTable,
+			Columns: []string{event.CreatorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := euo.mutation.CreatorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   event.CreatorTable,
+			Columns: []string{event.CreatorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -7,6 +7,7 @@ import (
 	"calend/internal/modules/db/ent/invitation"
 	"calend/internal/modules/db/ent/predicate"
 	"calend/internal/modules/db/ent/tag"
+	"calend/internal/modules/db/ent/user"
 	"context"
 	"database/sql/driver"
 	"fmt"
@@ -26,6 +27,8 @@ type EventQuery struct {
 	predicates      []predicate.Event
 	withTags        *TagQuery
 	withInvitations *InvitationQuery
+	withCreator     *UserQuery
+	withFKs         bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -99,6 +102,28 @@ func (eq *EventQuery) QueryInvitations() *InvitationQuery {
 			sqlgraph.From(event.Table, event.FieldID, selector),
 			sqlgraph.To(invitation.Table, invitation.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, event.InvitationsTable, event.InvitationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(eq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCreator chains the current query on the "creator" edge.
+func (eq *EventQuery) QueryCreator() *UserQuery {
+	query := (&UserClient{config: eq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := eq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := eq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(event.Table, event.FieldID, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, event.CreatorTable, event.CreatorColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(eq.driver.Dialect(), step)
 		return fromU, nil
@@ -300,6 +325,7 @@ func (eq *EventQuery) Clone() *EventQuery {
 		predicates:      append([]predicate.Event{}, eq.predicates...),
 		withTags:        eq.withTags.Clone(),
 		withInvitations: eq.withInvitations.Clone(),
+		withCreator:     eq.withCreator.Clone(),
 		// clone intermediate query.
 		sql:  eq.sql.Clone(),
 		path: eq.path,
@@ -325,6 +351,17 @@ func (eq *EventQuery) WithInvitations(opts ...func(*InvitationQuery)) *EventQuer
 		opt(query)
 	}
 	eq.withInvitations = query
+	return eq
+}
+
+// WithCreator tells the query-builder to eager-load the nodes that are connected to
+// the "creator" edge. The optional arguments are used to configure the query builder of the edge.
+func (eq *EventQuery) WithCreator(opts ...func(*UserQuery)) *EventQuery {
+	query := (&UserClient{config: eq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	eq.withCreator = query
 	return eq
 }
 
@@ -405,12 +442,20 @@ func (eq *EventQuery) prepareQuery(ctx context.Context) error {
 func (eq *EventQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Event, error) {
 	var (
 		nodes       = []*Event{}
+		withFKs     = eq.withFKs
 		_spec       = eq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			eq.withTags != nil,
 			eq.withInvitations != nil,
+			eq.withCreator != nil,
 		}
 	)
+	if eq.withCreator != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, event.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Event).scanValues(nil, columns)
 	}
@@ -440,6 +485,12 @@ func (eq *EventQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Event,
 		if err := eq.loadInvitations(ctx, query, nodes,
 			func(n *Event) { n.Edges.Invitations = []*Invitation{} },
 			func(n *Event, e *Invitation) { n.Edges.Invitations = append(n.Edges.Invitations, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := eq.withCreator; query != nil {
+		if err := eq.loadCreator(ctx, query, nodes, nil,
+			func(n *Event, e *User) { n.Edges.Creator = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -535,6 +586,38 @@ func (eq *EventQuery) loadInvitations(ctx context.Context, query *InvitationQuer
 			return fmt.Errorf(`unexpected foreign-key "event_uuid" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
+	}
+	return nil
+}
+func (eq *EventQuery) loadCreator(ctx context.Context, query *UserQuery, nodes []*Event, init func(*Event), assign func(*Event, *User)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*Event)
+	for i := range nodes {
+		if nodes[i].creator_uuid == nil {
+			continue
+		}
+		fk := *nodes[i].creator_uuid
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(user.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "creator_uuid" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
 	}
 	return nil
 }

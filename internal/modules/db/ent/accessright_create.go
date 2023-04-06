@@ -4,7 +4,9 @@ package ent
 
 import (
 	"calend/internal/modules/db/ent/accessright"
+	"calend/internal/modules/db/ent/invitation"
 	"context"
+	"errors"
 	"fmt"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -16,6 +18,33 @@ type AccessRightCreate struct {
 	config
 	mutation *AccessRightMutation
 	hooks    []Hook
+}
+
+// SetDescription sets the "description" field.
+func (arc *AccessRightCreate) SetDescription(s string) *AccessRightCreate {
+	arc.mutation.SetDescription(s)
+	return arc
+}
+
+// SetID sets the "id" field.
+func (arc *AccessRightCreate) SetID(s string) *AccessRightCreate {
+	arc.mutation.SetID(s)
+	return arc
+}
+
+// AddInvitationIDs adds the "invitations" edge to the Invitation entity by IDs.
+func (arc *AccessRightCreate) AddInvitationIDs(ids ...string) *AccessRightCreate {
+	arc.mutation.AddInvitationIDs(ids...)
+	return arc
+}
+
+// AddInvitations adds the "invitations" edges to the Invitation entity.
+func (arc *AccessRightCreate) AddInvitations(i ...*Invitation) *AccessRightCreate {
+	ids := make([]string, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return arc.AddInvitationIDs(ids...)
 }
 
 // Mutation returns the AccessRightMutation object of the builder.
@@ -52,6 +81,9 @@ func (arc *AccessRightCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (arc *AccessRightCreate) check() error {
+	if _, ok := arc.mutation.Description(); !ok {
+		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "AccessRight.description"`)}
+	}
 	return nil
 }
 
@@ -66,8 +98,13 @@ func (arc *AccessRightCreate) sqlSave(ctx context.Context) (*AccessRight, error)
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected AccessRight.ID type: %T", _spec.ID.Value)
+		}
+	}
 	arc.mutation.id = &_node.ID
 	arc.mutation.done = true
 	return _node, nil
@@ -76,8 +113,32 @@ func (arc *AccessRightCreate) sqlSave(ctx context.Context) (*AccessRight, error)
 func (arc *AccessRightCreate) createSpec() (*AccessRight, *sqlgraph.CreateSpec) {
 	var (
 		_node = &AccessRight{config: arc.config}
-		_spec = sqlgraph.NewCreateSpec(accessright.Table, sqlgraph.NewFieldSpec(accessright.FieldID, field.TypeInt))
+		_spec = sqlgraph.NewCreateSpec(accessright.Table, sqlgraph.NewFieldSpec(accessright.FieldID, field.TypeString))
 	)
+	if id, ok := arc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = id
+	}
+	if value, ok := arc.mutation.Description(); ok {
+		_spec.SetField(accessright.FieldDescription, field.TypeString, value)
+		_node.Description = value
+	}
+	if nodes := arc.mutation.InvitationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   accessright.InvitationsTable,
+			Columns: []string{accessright.InvitationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
@@ -121,10 +182,6 @@ func (arcb *AccessRightCreateBulk) Save(ctx context.Context) ([]*AccessRight, er
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})

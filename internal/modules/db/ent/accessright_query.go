@@ -4,8 +4,10 @@ package ent
 
 import (
 	"calend/internal/modules/db/ent/accessright"
+	"calend/internal/modules/db/ent/invitation"
 	"calend/internal/modules/db/ent/predicate"
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -17,10 +19,11 @@ import (
 // AccessRightQuery is the builder for querying AccessRight entities.
 type AccessRightQuery struct {
 	config
-	ctx        *QueryContext
-	order      []OrderFunc
-	inters     []Interceptor
-	predicates []predicate.AccessRight
+	ctx             *QueryContext
+	order           []OrderFunc
+	inters          []Interceptor
+	predicates      []predicate.AccessRight
+	withInvitations *InvitationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -57,6 +60,28 @@ func (arq *AccessRightQuery) Order(o ...OrderFunc) *AccessRightQuery {
 	return arq
 }
 
+// QueryInvitations chains the current query on the "invitations" edge.
+func (arq *AccessRightQuery) QueryInvitations() *InvitationQuery {
+	query := (&InvitationClient{config: arq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := arq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := arq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(accessright.Table, accessright.FieldID, selector),
+			sqlgraph.To(invitation.Table, invitation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, accessright.InvitationsTable, accessright.InvitationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(arq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first AccessRight entity from the query.
 // Returns a *NotFoundError when no AccessRight was found.
 func (arq *AccessRightQuery) First(ctx context.Context) (*AccessRight, error) {
@@ -81,8 +106,8 @@ func (arq *AccessRightQuery) FirstX(ctx context.Context) *AccessRight {
 
 // FirstID returns the first AccessRight ID from the query.
 // Returns a *NotFoundError when no AccessRight ID was found.
-func (arq *AccessRightQuery) FirstID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (arq *AccessRightQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = arq.Limit(1).IDs(setContextOp(ctx, arq.ctx, "FirstID")); err != nil {
 		return
 	}
@@ -94,7 +119,7 @@ func (arq *AccessRightQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (arq *AccessRightQuery) FirstIDX(ctx context.Context) int {
+func (arq *AccessRightQuery) FirstIDX(ctx context.Context) string {
 	id, err := arq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -132,8 +157,8 @@ func (arq *AccessRightQuery) OnlyX(ctx context.Context) *AccessRight {
 // OnlyID is like Only, but returns the only AccessRight ID in the query.
 // Returns a *NotSingularError when more than one AccessRight ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (arq *AccessRightQuery) OnlyID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (arq *AccessRightQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = arq.Limit(2).IDs(setContextOp(ctx, arq.ctx, "OnlyID")); err != nil {
 		return
 	}
@@ -149,7 +174,7 @@ func (arq *AccessRightQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (arq *AccessRightQuery) OnlyIDX(ctx context.Context) int {
+func (arq *AccessRightQuery) OnlyIDX(ctx context.Context) string {
 	id, err := arq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -177,7 +202,7 @@ func (arq *AccessRightQuery) AllX(ctx context.Context) []*AccessRight {
 }
 
 // IDs executes the query and returns a list of AccessRight IDs.
-func (arq *AccessRightQuery) IDs(ctx context.Context) (ids []int, err error) {
+func (arq *AccessRightQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if arq.ctx.Unique == nil && arq.path != nil {
 		arq.Unique(true)
 	}
@@ -189,7 +214,7 @@ func (arq *AccessRightQuery) IDs(ctx context.Context) (ids []int, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (arq *AccessRightQuery) IDsX(ctx context.Context) []int {
+func (arq *AccessRightQuery) IDsX(ctx context.Context) []string {
 	ids, err := arq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -244,19 +269,43 @@ func (arq *AccessRightQuery) Clone() *AccessRightQuery {
 		return nil
 	}
 	return &AccessRightQuery{
-		config:     arq.config,
-		ctx:        arq.ctx.Clone(),
-		order:      append([]OrderFunc{}, arq.order...),
-		inters:     append([]Interceptor{}, arq.inters...),
-		predicates: append([]predicate.AccessRight{}, arq.predicates...),
+		config:          arq.config,
+		ctx:             arq.ctx.Clone(),
+		order:           append([]OrderFunc{}, arq.order...),
+		inters:          append([]Interceptor{}, arq.inters...),
+		predicates:      append([]predicate.AccessRight{}, arq.predicates...),
+		withInvitations: arq.withInvitations.Clone(),
 		// clone intermediate query.
 		sql:  arq.sql.Clone(),
 		path: arq.path,
 	}
 }
 
+// WithInvitations tells the query-builder to eager-load the nodes that are connected to
+// the "invitations" edge. The optional arguments are used to configure the query builder of the edge.
+func (arq *AccessRightQuery) WithInvitations(opts ...func(*InvitationQuery)) *AccessRightQuery {
+	query := (&InvitationClient{config: arq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	arq.withInvitations = query
+	return arq
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
+//
+// Example:
+//
+//	var v []struct {
+//		Description string `json:"description,omitempty"`
+//		Count int `json:"count,omitempty"`
+//	}
+//
+//	client.AccessRight.Query().
+//		GroupBy(accessright.FieldDescription).
+//		Aggregate(ent.Count()).
+//		Scan(ctx, &v)
 func (arq *AccessRightQuery) GroupBy(field string, fields ...string) *AccessRightGroupBy {
 	arq.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &AccessRightGroupBy{build: arq}
@@ -268,6 +317,16 @@ func (arq *AccessRightQuery) GroupBy(field string, fields ...string) *AccessRigh
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
+//
+// Example:
+//
+//	var v []struct {
+//		Description string `json:"description,omitempty"`
+//	}
+//
+//	client.AccessRight.Query().
+//		Select(accessright.FieldDescription).
+//		Scan(ctx, &v)
 func (arq *AccessRightQuery) Select(fields ...string) *AccessRightSelect {
 	arq.ctx.Fields = append(arq.ctx.Fields, fields...)
 	sbuild := &AccessRightSelect{AccessRightQuery: arq}
@@ -309,8 +368,11 @@ func (arq *AccessRightQuery) prepareQuery(ctx context.Context) error {
 
 func (arq *AccessRightQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*AccessRight, error) {
 	var (
-		nodes = []*AccessRight{}
-		_spec = arq.querySpec()
+		nodes       = []*AccessRight{}
+		_spec       = arq.querySpec()
+		loadedTypes = [1]bool{
+			arq.withInvitations != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*AccessRight).scanValues(nil, columns)
@@ -318,6 +380,7 @@ func (arq *AccessRightQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &AccessRight{config: arq.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -329,7 +392,46 @@ func (arq *AccessRightQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := arq.withInvitations; query != nil {
+		if err := arq.loadInvitations(ctx, query, nodes,
+			func(n *AccessRight) { n.Edges.Invitations = []*Invitation{} },
+			func(n *AccessRight, e *Invitation) { n.Edges.Invitations = append(n.Edges.Invitations, e) }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (arq *AccessRightQuery) loadInvitations(ctx context.Context, query *InvitationQuery, nodes []*AccessRight, init func(*AccessRight), assign func(*AccessRight, *Invitation)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*AccessRight)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Invitation(func(s *sql.Selector) {
+		s.Where(sql.InValues(accessright.InvitationsColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.access_right_code
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "access_right_code" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "access_right_code" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (arq *AccessRightQuery) sqlCount(ctx context.Context) (int, error) {
@@ -342,7 +444,7 @@ func (arq *AccessRightQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (arq *AccessRightQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(accessright.Table, accessright.Columns, sqlgraph.NewFieldSpec(accessright.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewQuerySpec(accessright.Table, accessright.Columns, sqlgraph.NewFieldSpec(accessright.FieldID, field.TypeString))
 	_spec.From = arq.sql
 	if unique := arq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

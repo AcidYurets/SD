@@ -10,7 +10,8 @@ import (
 var (
 	// AccessRightsColumns holds the columns for the "access_rights" table.
 	AccessRightsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "code", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString},
 	}
 	// AccessRightsTable holds the schema information for the "access_rights" table.
 	AccessRightsTable = &schema.Table{
@@ -29,18 +30,28 @@ var (
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "type", Type: field.TypeString},
 		{Name: "is_whole_day", Type: field.TypeBool},
+		{Name: "creator_uuid", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "uuid"}},
 	}
 	// EventsTable holds the schema information for the "events" table.
 	EventsTable = &schema.Table{
 		Name:       "events",
 		Columns:    EventsColumns,
 		PrimaryKey: []*schema.Column{EventsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "events_users_created_events",
+				Columns:    []*schema.Column{EventsColumns[9]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// InvitationsColumns holds the columns for the "invitations" table.
 	InvitationsColumns = []*schema.Column{
 		{Name: "uuid", Type: field.TypeString, Default: schema.Expr("uuid_generate_v4()"), SchemaType: map[string]string{"postgres": "uuid"}},
+		{Name: "access_right_code", Type: field.TypeString, Nullable: true},
 		{Name: "event_uuid", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "uuid"}},
-		{Name: "user_uuid", Type: field.TypeInt, Nullable: true},
+		{Name: "user_uuid", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "uuid"}},
 	}
 	// InvitationsTable holds the schema information for the "invitations" table.
 	InvitationsTable = &schema.Table{
@@ -49,14 +60,20 @@ var (
 		PrimaryKey: []*schema.Column{InvitationsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "invitations_events_invitations",
+				Symbol:     "invitations_access_rights_invitations",
 				Columns:    []*schema.Column{InvitationsColumns[1]},
+				RefColumns: []*schema.Column{AccessRightsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "invitations_events_invitations",
+				Columns:    []*schema.Column{InvitationsColumns[2]},
 				RefColumns: []*schema.Column{EventsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "invitations_users_invitations",
-				Columns:    []*schema.Column{InvitationsColumns[2]},
+				Columns:    []*schema.Column{InvitationsColumns[3]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -79,7 +96,13 @@ var (
 	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "uuid", Type: field.TypeString, Default: schema.Expr("uuid_generate_v4()"), SchemaType: map[string]string{"postgres": "uuid"}},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "phone", Type: field.TypeString},
+		{Name: "login", Type: field.TypeString},
+		{Name: "password_hash", Type: field.TypeString},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
@@ -124,8 +147,10 @@ var (
 )
 
 func init() {
-	InvitationsTable.ForeignKeys[0].RefTable = EventsTable
-	InvitationsTable.ForeignKeys[1].RefTable = UsersTable
+	EventsTable.ForeignKeys[0].RefTable = UsersTable
+	InvitationsTable.ForeignKeys[0].RefTable = AccessRightsTable
+	InvitationsTable.ForeignKeys[1].RefTable = EventsTable
+	InvitationsTable.ForeignKeys[2].RefTable = UsersTable
 	EventsTagsTable.ForeignKeys[0].RefTable = EventsTable
 	EventsTagsTable.ForeignKeys[1].RefTable = TagsTable
 }

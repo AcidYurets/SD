@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"calend/internal/modules/db/ent/accessright"
 	"calend/internal/modules/db/ent/event"
 	"calend/internal/modules/db/ent/invitation"
 	"calend/internal/modules/db/ent/predicate"
@@ -19,13 +20,14 @@ import (
 // InvitationQuery is the builder for querying Invitation entities.
 type InvitationQuery struct {
 	config
-	ctx        *QueryContext
-	order      []OrderFunc
-	inters     []Interceptor
-	predicates []predicate.Invitation
-	withEvent  *EventQuery
-	withUser   *UserQuery
-	withFKs    bool
+	ctx             *QueryContext
+	order           []OrderFunc
+	inters          []Interceptor
+	predicates      []predicate.Invitation
+	withEvent       *EventQuery
+	withUser        *UserQuery
+	withAccessRight *AccessRightQuery
+	withFKs         bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -99,6 +101,28 @@ func (iq *InvitationQuery) QueryUser() *UserQuery {
 			sqlgraph.From(invitation.Table, invitation.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, invitation.UserTable, invitation.UserColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(iq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAccessRight chains the current query on the "access_right" edge.
+func (iq *InvitationQuery) QueryAccessRight() *AccessRightQuery {
+	query := (&AccessRightClient{config: iq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := iq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := iq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(invitation.Table, invitation.FieldID, selector),
+			sqlgraph.To(accessright.Table, accessright.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, invitation.AccessRightTable, invitation.AccessRightColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(iq.driver.Dialect(), step)
 		return fromU, nil
@@ -293,13 +317,14 @@ func (iq *InvitationQuery) Clone() *InvitationQuery {
 		return nil
 	}
 	return &InvitationQuery{
-		config:     iq.config,
-		ctx:        iq.ctx.Clone(),
-		order:      append([]OrderFunc{}, iq.order...),
-		inters:     append([]Interceptor{}, iq.inters...),
-		predicates: append([]predicate.Invitation{}, iq.predicates...),
-		withEvent:  iq.withEvent.Clone(),
-		withUser:   iq.withUser.Clone(),
+		config:          iq.config,
+		ctx:             iq.ctx.Clone(),
+		order:           append([]OrderFunc{}, iq.order...),
+		inters:          append([]Interceptor{}, iq.inters...),
+		predicates:      append([]predicate.Invitation{}, iq.predicates...),
+		withEvent:       iq.withEvent.Clone(),
+		withUser:        iq.withUser.Clone(),
+		withAccessRight: iq.withAccessRight.Clone(),
 		// clone intermediate query.
 		sql:  iq.sql.Clone(),
 		path: iq.path,
@@ -325,6 +350,17 @@ func (iq *InvitationQuery) WithUser(opts ...func(*UserQuery)) *InvitationQuery {
 		opt(query)
 	}
 	iq.withUser = query
+	return iq
+}
+
+// WithAccessRight tells the query-builder to eager-load the nodes that are connected to
+// the "access_right" edge. The optional arguments are used to configure the query builder of the edge.
+func (iq *InvitationQuery) WithAccessRight(opts ...func(*AccessRightQuery)) *InvitationQuery {
+	query := (&AccessRightClient{config: iq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	iq.withAccessRight = query
 	return iq
 }
 
@@ -385,12 +421,13 @@ func (iq *InvitationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*I
 		nodes       = []*Invitation{}
 		withFKs     = iq.withFKs
 		_spec       = iq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			iq.withEvent != nil,
 			iq.withUser != nil,
+			iq.withAccessRight != nil,
 		}
 	)
-	if iq.withEvent != nil || iq.withUser != nil {
+	if iq.withEvent != nil || iq.withUser != nil || iq.withAccessRight != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -423,6 +460,12 @@ func (iq *InvitationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*I
 	if query := iq.withUser; query != nil {
 		if err := iq.loadUser(ctx, query, nodes, nil,
 			func(n *Invitation, e *User) { n.Edges.User = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := iq.withAccessRight; query != nil {
+		if err := iq.loadAccessRight(ctx, query, nodes, nil,
+			func(n *Invitation, e *AccessRight) { n.Edges.AccessRight = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -462,8 +505,8 @@ func (iq *InvitationQuery) loadEvent(ctx context.Context, query *EventQuery, nod
 	return nil
 }
 func (iq *InvitationQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Invitation, init func(*Invitation), assign func(*Invitation, *User)) error {
-	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*Invitation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*Invitation)
 	for i := range nodes {
 		if nodes[i].user_uuid == nil {
 			continue
@@ -486,6 +529,38 @@ func (iq *InvitationQuery) loadUser(ctx context.Context, query *UserQuery, nodes
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "user_uuid" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (iq *InvitationQuery) loadAccessRight(ctx context.Context, query *AccessRightQuery, nodes []*Invitation, init func(*Invitation), assign func(*Invitation, *AccessRight)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*Invitation)
+	for i := range nodes {
+		if nodes[i].access_right_code == nil {
+			continue
+		}
+		fk := *nodes[i].access_right_code
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(accessright.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "access_right_code" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

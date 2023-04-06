@@ -12,9 +12,32 @@ import (
 
 // AccessRight is the model entity for the AccessRight schema.
 type AccessRight struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
+	// Description holds the value of the "description" field.
+	Description string `json:"description,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the AccessRightQuery when eager-loading is set.
+	Edges AccessRightEdges `json:"edges"`
+}
+
+// AccessRightEdges holds the relations/edges for other nodes in the graph.
+type AccessRightEdges struct {
+	// Invitations holds the value of the invitations edge.
+	Invitations []*Invitation `json:"invitations,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// InvitationsOrErr returns the Invitations value or an error if the edge
+// was not loaded in eager-loading.
+func (e AccessRightEdges) InvitationsOrErr() ([]*Invitation, error) {
+	if e.loadedTypes[0] {
+		return e.Invitations, nil
+	}
+	return nil, &NotLoadedError{edge: "invitations"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -22,8 +45,8 @@ func (*AccessRight) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case accessright.FieldID:
-			values[i] = new(sql.NullInt64)
+		case accessright.FieldID, accessright.FieldDescription:
+			values[i] = new(sql.NullString)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type AccessRight", columns[i])
 		}
@@ -40,14 +63,25 @@ func (ar *AccessRight) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case accessright.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value.Valid {
+				ar.ID = value.String
 			}
-			ar.ID = int(value.Int64)
+		case accessright.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				ar.Description = value.String
+			}
 		}
 	}
 	return nil
+}
+
+// QueryInvitations queries the "invitations" edge of the AccessRight entity.
+func (ar *AccessRight) QueryInvitations() *InvitationQuery {
+	return NewAccessRightClient(ar.config).QueryInvitations(ar)
 }
 
 // Update returns a builder for updating this AccessRight.
@@ -72,7 +106,9 @@ func (ar *AccessRight) Unwrap() *AccessRight {
 func (ar *AccessRight) String() string {
 	var builder strings.Builder
 	builder.WriteString("AccessRight(")
-	builder.WriteString(fmt.Sprintf("id=%v", ar.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", ar.ID))
+	builder.WriteString("description=")
+	builder.WriteString(ar.Description)
 	builder.WriteByte(')')
 	return builder.String()
 }

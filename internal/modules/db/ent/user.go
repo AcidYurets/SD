@@ -6,15 +6,28 @@ import (
 	"calend/internal/modules/db/ent/user"
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 )
 
 // User is the model entity for the User schema.
 type User struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// DeletedAt holds the value of the "deleted_at" field.
+	DeletedAt time.Time `json:"deleted_at,omitempty"`
+	// Phone holds the value of the "phone" field.
+	Phone string `json:"phone,omitempty"`
+	// Login holds the value of the "login" field.
+	Login string `json:"login,omitempty"`
+	// PasswordHash holds the value of the "password_hash" field.
+	PasswordHash string `json:"password_hash,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges UserEdges `json:"edges"`
@@ -24,9 +37,11 @@ type User struct {
 type UserEdges struct {
 	// Invitations holds the value of the invitations edge.
 	Invitations []*Invitation `json:"invitations,omitempty"`
+	// CreatedEvents holds the value of the created_events edge.
+	CreatedEvents []*Event `json:"created_events,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // InvitationsOrErr returns the Invitations value or an error if the edge
@@ -38,13 +53,24 @@ func (e UserEdges) InvitationsOrErr() ([]*Invitation, error) {
 	return nil, &NotLoadedError{edge: "invitations"}
 }
 
+// CreatedEventsOrErr returns the CreatedEvents value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) CreatedEventsOrErr() ([]*Event, error) {
+	if e.loadedTypes[1] {
+		return e.CreatedEvents, nil
+	}
+	return nil, &NotLoadedError{edge: "created_events"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case user.FieldID:
-			values[i] = new(sql.NullInt64)
+		case user.FieldID, user.FieldPhone, user.FieldLogin, user.FieldPasswordHash:
+			values[i] = new(sql.NullString)
+		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldDeletedAt:
+			values[i] = new(sql.NullTime)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type User", columns[i])
 		}
@@ -61,11 +87,47 @@ func (u *User) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case user.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value.Valid {
+				u.ID = value.String
 			}
-			u.ID = int(value.Int64)
+		case user.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				u.CreatedAt = value.Time
+			}
+		case user.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				u.UpdatedAt = value.Time
+			}
+		case user.FieldDeletedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
+			} else if value.Valid {
+				u.DeletedAt = value.Time
+			}
+		case user.FieldPhone:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field phone", values[i])
+			} else if value.Valid {
+				u.Phone = value.String
+			}
+		case user.FieldLogin:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field login", values[i])
+			} else if value.Valid {
+				u.Login = value.String
+			}
+		case user.FieldPasswordHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field password_hash", values[i])
+			} else if value.Valid {
+				u.PasswordHash = value.String
+			}
 		}
 	}
 	return nil
@@ -74,6 +136,11 @@ func (u *User) assignValues(columns []string, values []any) error {
 // QueryInvitations queries the "invitations" edge of the User entity.
 func (u *User) QueryInvitations() *InvitationQuery {
 	return NewUserClient(u.config).QueryInvitations(u)
+}
+
+// QueryCreatedEvents queries the "created_events" edge of the User entity.
+func (u *User) QueryCreatedEvents() *EventQuery {
+	return NewUserClient(u.config).QueryCreatedEvents(u)
 }
 
 // Update returns a builder for updating this User.
@@ -98,7 +165,24 @@ func (u *User) Unwrap() *User {
 func (u *User) String() string {
 	var builder strings.Builder
 	builder.WriteString("User(")
-	builder.WriteString(fmt.Sprintf("id=%v", u.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", u.ID))
+	builder.WriteString("created_at=")
+	builder.WriteString(u.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(u.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("deleted_at=")
+	builder.WriteString(u.DeletedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("phone=")
+	builder.WriteString(u.Phone)
+	builder.WriteString(", ")
+	builder.WriteString("login=")
+	builder.WriteString(u.Login)
+	builder.WriteString(", ")
+	builder.WriteString("password_hash=")
+	builder.WriteString(u.PasswordHash)
 	builder.WriteByte(')')
 	return builder.String()
 }

@@ -37,5 +37,8 @@ func (Event) Edges() []ent.Edge {
 		edge.To("invitations", Invitation.Type).StorageKey(
 			edge.Column("event_uuid"),
 		),
+		edge.From("creator", User.Type).
+			Ref("created_events").
+			Unique(),
 	}
 }

@@ -4,6 +4,7 @@ package ent
 
 import (
 	"calend/internal/modules/db/ent/event"
+	"calend/internal/modules/db/ent/user"
 	"fmt"
 	"strings"
 	"time"
@@ -34,7 +35,8 @@ type Event struct {
 	IsWholeDay bool `json:"is_whole_day,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the EventQuery when eager-loading is set.
-	Edges EventEdges `json:"edges"`
+	Edges        EventEdges `json:"edges"`
+	creator_uuid *string
 }
 
 // EventEdges holds the relations/edges for other nodes in the graph.
@@ -43,9 +45,11 @@ type EventEdges struct {
 	Tags []*Tag `json:"tags,omitempty"`
 	// Invitations holds the value of the invitations edge.
 	Invitations []*Invitation `json:"invitations,omitempty"`
+	// Creator holds the value of the creator edge.
+	Creator *User `json:"creator,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // TagsOrErr returns the Tags value or an error if the edge
@@ -66,6 +70,19 @@ func (e EventEdges) InvitationsOrErr() ([]*Invitation, error) {
 	return nil, &NotLoadedError{edge: "invitations"}
 }
 
+// CreatorOrErr returns the Creator value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e EventEdges) CreatorOrErr() (*User, error) {
+	if e.loadedTypes[2] {
+		if e.Creator == nil {
+			// Edge was loaded but was not found.
+			return nil, &NotFoundError{label: user.Label}
+		}
+		return e.Creator, nil
+	}
+	return nil, &NotLoadedError{edge: "creator"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Event) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -77,6 +94,8 @@ func (*Event) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case event.FieldCreatedAt, event.FieldUpdatedAt, event.FieldDeletedAt, event.FieldTimestamp:
 			values[i] = new(sql.NullTime)
+		case event.ForeignKeys[0]: // creator_uuid
+			values[i] = new(sql.NullString)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Event", columns[i])
 		}
@@ -147,6 +166,13 @@ func (e *Event) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				e.IsWholeDay = value.Bool
 			}
+		case event.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field creator_uuid", values[i])
+			} else if value.Valid {
+				e.creator_uuid = new(string)
+				*e.creator_uuid = value.String
+			}
 		}
 	}
 	return nil
@@ -160,6 +186,11 @@ func (e *Event) QueryTags() *TagQuery {
 // QueryInvitations queries the "invitations" edge of the Event entity.
 func (e *Event) QueryInvitations() *InvitationQuery {
 	return NewEventClient(e.config).QueryInvitations(e)
+}
+
+// QueryCreator queries the "creator" edge of the Event entity.
+func (e *Event) QueryCreator() *UserQuery {
+	return NewEventClient(e.config).QueryCreator(e)
 }
 
 // Update returns a builder for updating this Event.

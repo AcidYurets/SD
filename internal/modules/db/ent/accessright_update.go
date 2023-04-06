@@ -4,6 +4,7 @@ package ent
 
 import (
 	"calend/internal/modules/db/ent/accessright"
+	"calend/internal/modules/db/ent/invitation"
 	"calend/internal/modules/db/ent/predicate"
 	"context"
 	"errors"
@@ -27,9 +28,51 @@ func (aru *AccessRightUpdate) Where(ps ...predicate.AccessRight) *AccessRightUpd
 	return aru
 }
 
+// SetDescription sets the "description" field.
+func (aru *AccessRightUpdate) SetDescription(s string) *AccessRightUpdate {
+	aru.mutation.SetDescription(s)
+	return aru
+}
+
+// AddInvitationIDs adds the "invitations" edge to the Invitation entity by IDs.
+func (aru *AccessRightUpdate) AddInvitationIDs(ids ...string) *AccessRightUpdate {
+	aru.mutation.AddInvitationIDs(ids...)
+	return aru
+}
+
+// AddInvitations adds the "invitations" edges to the Invitation entity.
+func (aru *AccessRightUpdate) AddInvitations(i ...*Invitation) *AccessRightUpdate {
+	ids := make([]string, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return aru.AddInvitationIDs(ids...)
+}
+
 // Mutation returns the AccessRightMutation object of the builder.
 func (aru *AccessRightUpdate) Mutation() *AccessRightMutation {
 	return aru.mutation
+}
+
+// ClearInvitations clears all "invitations" edges to the Invitation entity.
+func (aru *AccessRightUpdate) ClearInvitations() *AccessRightUpdate {
+	aru.mutation.ClearInvitations()
+	return aru
+}
+
+// RemoveInvitationIDs removes the "invitations" edge to Invitation entities by IDs.
+func (aru *AccessRightUpdate) RemoveInvitationIDs(ids ...string) *AccessRightUpdate {
+	aru.mutation.RemoveInvitationIDs(ids...)
+	return aru
+}
+
+// RemoveInvitations removes "invitations" edges to Invitation entities.
+func (aru *AccessRightUpdate) RemoveInvitations(i ...*Invitation) *AccessRightUpdate {
+	ids := make([]string, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return aru.RemoveInvitationIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -60,13 +103,61 @@ func (aru *AccessRightUpdate) ExecX(ctx context.Context) {
 }
 
 func (aru *AccessRightUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := sqlgraph.NewUpdateSpec(accessright.Table, accessright.Columns, sqlgraph.NewFieldSpec(accessright.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(accessright.Table, accessright.Columns, sqlgraph.NewFieldSpec(accessright.FieldID, field.TypeString))
 	if ps := aru.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := aru.mutation.Description(); ok {
+		_spec.SetField(accessright.FieldDescription, field.TypeString, value)
+	}
+	if aru.mutation.InvitationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   accessright.InvitationsTable,
+			Columns: []string{accessright.InvitationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := aru.mutation.RemovedInvitationsIDs(); len(nodes) > 0 && !aru.mutation.InvitationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   accessright.InvitationsTable,
+			Columns: []string{accessright.InvitationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := aru.mutation.InvitationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   accessright.InvitationsTable,
+			Columns: []string{accessright.InvitationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, aru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -88,9 +179,51 @@ type AccessRightUpdateOne struct {
 	mutation *AccessRightMutation
 }
 
+// SetDescription sets the "description" field.
+func (aruo *AccessRightUpdateOne) SetDescription(s string) *AccessRightUpdateOne {
+	aruo.mutation.SetDescription(s)
+	return aruo
+}
+
+// AddInvitationIDs adds the "invitations" edge to the Invitation entity by IDs.
+func (aruo *AccessRightUpdateOne) AddInvitationIDs(ids ...string) *AccessRightUpdateOne {
+	aruo.mutation.AddInvitationIDs(ids...)
+	return aruo
+}
+
+// AddInvitations adds the "invitations" edges to the Invitation entity.
+func (aruo *AccessRightUpdateOne) AddInvitations(i ...*Invitation) *AccessRightUpdateOne {
+	ids := make([]string, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return aruo.AddInvitationIDs(ids...)
+}
+
 // Mutation returns the AccessRightMutation object of the builder.
 func (aruo *AccessRightUpdateOne) Mutation() *AccessRightMutation {
 	return aruo.mutation
+}
+
+// ClearInvitations clears all "invitations" edges to the Invitation entity.
+func (aruo *AccessRightUpdateOne) ClearInvitations() *AccessRightUpdateOne {
+	aruo.mutation.ClearInvitations()
+	return aruo
+}
+
+// RemoveInvitationIDs removes the "invitations" edge to Invitation entities by IDs.
+func (aruo *AccessRightUpdateOne) RemoveInvitationIDs(ids ...string) *AccessRightUpdateOne {
+	aruo.mutation.RemoveInvitationIDs(ids...)
+	return aruo
+}
+
+// RemoveInvitations removes "invitations" edges to Invitation entities.
+func (aruo *AccessRightUpdateOne) RemoveInvitations(i ...*Invitation) *AccessRightUpdateOne {
+	ids := make([]string, len(i))
+	for j := range i {
+		ids[j] = i[j].ID
+	}
+	return aruo.RemoveInvitationIDs(ids...)
 }
 
 // Where appends a list predicates to the AccessRightUpdate builder.
@@ -134,7 +267,7 @@ func (aruo *AccessRightUpdateOne) ExecX(ctx context.Context) {
 }
 
 func (aruo *AccessRightUpdateOne) sqlSave(ctx context.Context) (_node *AccessRight, err error) {
-	_spec := sqlgraph.NewUpdateSpec(accessright.Table, accessright.Columns, sqlgraph.NewFieldSpec(accessright.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(accessright.Table, accessright.Columns, sqlgraph.NewFieldSpec(accessright.FieldID, field.TypeString))
 	id, ok := aruo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "AccessRight.id" for update`)}
@@ -158,6 +291,54 @@ func (aruo *AccessRightUpdateOne) sqlSave(ctx context.Context) (_node *AccessRig
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := aruo.mutation.Description(); ok {
+		_spec.SetField(accessright.FieldDescription, field.TypeString, value)
+	}
+	if aruo.mutation.InvitationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   accessright.InvitationsTable,
+			Columns: []string{accessright.InvitationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := aruo.mutation.RemovedInvitationsIDs(); len(nodes) > 0 && !aruo.mutation.InvitationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   accessright.InvitationsTable,
+			Columns: []string{accessright.InvitationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := aruo.mutation.InvitationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   accessright.InvitationsTable,
+			Columns: []string{accessright.InvitationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &AccessRight{config: aruo.config}
 	_spec.Assign = _node.assignValues

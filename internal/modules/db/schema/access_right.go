@@ -1,6 +1,10 @@
 package schema
 
-import "entgo.io/ent"
+import (
+	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
+	"entgo.io/ent/schema/field"
+)
 
 // AccessRight holds the schema definition for the AccessRight entity.
 type AccessRight struct {
@@ -9,10 +13,19 @@ type AccessRight struct {
 
 // Fields of the AccessRight.
 func (AccessRight) Fields() []ent.Field {
-	return nil
+	return []ent.Field{
+		field.String("id").
+			Immutable().
+			StorageKey("code"),
+		field.String("description"),
+	}
 }
 
 // Edges of the AccessRight.
 func (AccessRight) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.To("invitations", Invitation.Type).StorageKey(
+			edge.Column("access_right_code"),
+		),
+	}
 }

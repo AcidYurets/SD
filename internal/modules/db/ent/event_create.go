@@ -6,6 +6,7 @@ import (
 	"calend/internal/modules/db/ent/event"
 	"calend/internal/modules/db/ent/invitation"
 	"calend/internal/modules/db/ent/tag"
+	"calend/internal/modules/db/ent/user"
 	"context"
 	"errors"
 	"fmt"
@@ -144,6 +145,25 @@ func (ec *EventCreate) AddInvitations(i ...*Invitation) *EventCreate {
 		ids[j] = i[j].ID
 	}
 	return ec.AddInvitationIDs(ids...)
+}
+
+// SetCreatorID sets the "creator" edge to the User entity by ID.
+func (ec *EventCreate) SetCreatorID(id string) *EventCreate {
+	ec.mutation.SetCreatorID(id)
+	return ec
+}
+
+// SetNillableCreatorID sets the "creator" edge to the User entity by ID if the given value is not nil.
+func (ec *EventCreate) SetNillableCreatorID(id *string) *EventCreate {
+	if id != nil {
+		ec = ec.SetCreatorID(*id)
+	}
+	return ec
+}
+
+// SetCreator sets the "creator" edge to the User entity.
+func (ec *EventCreate) SetCreator(u *User) *EventCreate {
+	return ec.SetCreatorID(u.ID)
 }
 
 // Mutation returns the EventMutation object of the builder.
@@ -324,6 +344,23 @@ func (ec *EventCreate) createSpec() (*Event, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := ec.mutation.CreatorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   event.CreatorTable,
+			Columns: []string{event.CreatorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.creator_uuid = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

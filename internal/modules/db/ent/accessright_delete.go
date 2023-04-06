@@ -40,7 +40,7 @@ func (ard *AccessRightDelete) ExecX(ctx context.Context) int {
 }
 
 func (ard *AccessRightDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(accessright.Table, sqlgraph.NewFieldSpec(accessright.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewDeleteSpec(accessright.Table, sqlgraph.NewFieldSpec(accessright.FieldID, field.TypeString))
 	if ps := ard.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

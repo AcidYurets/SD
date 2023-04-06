@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"calend/internal/modules/db/ent/accessright"
 	"calend/internal/modules/db/ent/event"
 	"calend/internal/modules/db/ent/invitation"
 	"calend/internal/modules/db/ent/user"
@@ -54,13 +55,13 @@ func (ic *InvitationCreate) SetEvent(e *Event) *InvitationCreate {
 }
 
 // SetUserID sets the "user" edge to the User entity by ID.
-func (ic *InvitationCreate) SetUserID(id int) *InvitationCreate {
+func (ic *InvitationCreate) SetUserID(id string) *InvitationCreate {
 	ic.mutation.SetUserID(id)
 	return ic
 }
 
 // SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
-func (ic *InvitationCreate) SetNillableUserID(id *int) *InvitationCreate {
+func (ic *InvitationCreate) SetNillableUserID(id *string) *InvitationCreate {
 	if id != nil {
 		ic = ic.SetUserID(*id)
 	}
@@ -70,6 +71,25 @@ func (ic *InvitationCreate) SetNillableUserID(id *int) *InvitationCreate {
 // SetUser sets the "user" edge to the User entity.
 func (ic *InvitationCreate) SetUser(u *User) *InvitationCreate {
 	return ic.SetUserID(u.ID)
+}
+
+// SetAccessRightID sets the "access_right" edge to the AccessRight entity by ID.
+func (ic *InvitationCreate) SetAccessRightID(id string) *InvitationCreate {
+	ic.mutation.SetAccessRightID(id)
+	return ic
+}
+
+// SetNillableAccessRightID sets the "access_right" edge to the AccessRight entity by ID if the given value is not nil.
+func (ic *InvitationCreate) SetNillableAccessRightID(id *string) *InvitationCreate {
+	if id != nil {
+		ic = ic.SetAccessRightID(*id)
+	}
+	return ic
+}
+
+// SetAccessRight sets the "access_right" edge to the AccessRight entity.
+func (ic *InvitationCreate) SetAccessRight(a *AccessRight) *InvitationCreate {
+	return ic.SetAccessRightID(a.ID)
 }
 
 // Mutation returns the InvitationMutation object of the builder.
@@ -175,13 +195,30 @@ func (ic *InvitationCreate) createSpec() (*Invitation, *sqlgraph.CreateSpec) {
 			Columns: []string{invitation.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.user_uuid = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := ic.mutation.AccessRightIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   invitation.AccessRightTable,
+			Columns: []string{invitation.AccessRightColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accessright.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.access_right_code = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

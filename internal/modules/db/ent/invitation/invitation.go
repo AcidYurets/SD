@@ -11,8 +11,10 @@ const (
 	EdgeEvent = "event"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
-	// UserFieldID holds the string denoting the ID field of the User.
-	UserFieldID = "id"
+	// EdgeAccessRight holds the string denoting the access_right edge name in mutations.
+	EdgeAccessRight = "access_right"
+	// AccessRightFieldID holds the string denoting the ID field of the AccessRight.
+	AccessRightFieldID = "code"
 	// Table holds the table name of the invitation in the database.
 	Table = "invitations"
 	// EventTable is the table that holds the event relation/edge.
@@ -29,6 +31,13 @@ const (
 	UserInverseTable = "users"
 	// UserColumn is the table column denoting the user relation/edge.
 	UserColumn = "user_uuid"
+	// AccessRightTable is the table that holds the access_right relation/edge.
+	AccessRightTable = "invitations"
+	// AccessRightInverseTable is the table name for the AccessRight entity.
+	// It exists in this package in order to avoid circular dependency with the "accessright" package.
+	AccessRightInverseTable = "access_rights"
+	// AccessRightColumn is the table column denoting the access_right relation/edge.
+	AccessRightColumn = "access_right_code"
 )
 
 // Columns holds all SQL columns for invitation fields.
@@ -39,6 +48,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "invitations"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
+	"access_right_code",
 	"event_uuid",
 	"user_uuid",
 }
