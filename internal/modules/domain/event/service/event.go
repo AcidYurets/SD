@@ -64,6 +64,14 @@ func (r *EventService) ListAvailable(ctx context.Context) (dto.Events, error) {
 }
 
 func (r *EventService) CreateWithInvitations(ctx context.Context, newEvent *dto.CreateEvent, newInvs dto.CreateEventInvitations) (*dto.Event, error) {
+	userUuid, err := getUserUuidFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Устанавливает создателя как текущего пользователя
+	newEvent.CreatorUuid = userUuid
+
 	// Создаем событие без приглашений
 	createdEvent, err := r.eventRepo.Create(ctx, newEvent)
 	if err != nil {

@@ -3,12 +3,12 @@ package schema
 import (
 	gen "calend/internal/modules/db/ent"
 	"calend/internal/modules/db/ent/hook"
+	"calend/internal/modules/db/ent/intercept"
 	"context"
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/entc/integration/hooks/ent/intercept"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/mixin"
 	"fmt"
@@ -96,7 +96,7 @@ func (d SoftDeleteMixin) Hooks() []ent.Hook {
 					mx, ok := m.(interface {
 						SetOp(ent.Op)
 						Client() *gen.Client
-						SetDeleteTime(time.Time)
+						SetDeletedAt(time.Time)
 						WhereP(...func(*sql.Selector))
 					})
 					if !ok {
@@ -104,7 +104,7 @@ func (d SoftDeleteMixin) Hooks() []ent.Hook {
 					}
 					d.P(mx)
 					mx.SetOp(ent.OpUpdate)
-					mx.SetDeleteTime(time.Now())
+					mx.SetDeletedAt(time.Now())
 					return mx.Client().Mutate(ctx, m)
 				})
 			},
@@ -116,6 +116,6 @@ func (d SoftDeleteMixin) Hooks() []ent.Hook {
 // P adds a storage-level predicate to the queries and mutations.
 func (d SoftDeleteMixin) P(w interface{ WhereP(...func(*sql.Selector)) }) {
 	w.WhereP(
-		sql.FieldIsNull(d.Fields()[0].Descriptor().Name),
+		sql.FieldIsNull(d.Fields()[3].Descriptor().Name),
 	)
 }

@@ -100,8 +100,8 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "phone", Type: field.TypeString},
-		{Name: "login", Type: field.TypeString},
+		{Name: "phone", Type: field.TypeString, Unique: true},
+		{Name: "login", Type: field.TypeString, Unique: true},
 		{Name: "password_hash", Type: field.TypeString},
 	}
 	// UsersTable holds the schema information for the "users" table.

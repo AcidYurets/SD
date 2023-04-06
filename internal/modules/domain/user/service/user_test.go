@@ -2,7 +2,6 @@ package service
 
 import (
 	"calend/internal/modules/domain/user/dto"
-	"calend/internal/utils/ptr"
 	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -101,8 +100,8 @@ func TestUserService_Update(t *testing.T) {
 
 	uuid := "123e4567-e89b-12d3-a456-426655440000"
 	updateUser := &dto.UpdateUser{
-		Phone: ptr.String("89197628804"),
-		Login: ptr.String("user2"),
+		Phone: "89197628804",
+		Login: "user2",
 	}
 
 	expectedUser := &dto.User{

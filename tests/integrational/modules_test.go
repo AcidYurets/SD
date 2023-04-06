@@ -1,4 +1,4 @@
-package integration
+package integrational
 
 import (
 	"calend/internal/modules/app"

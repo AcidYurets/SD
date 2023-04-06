@@ -3,6 +3,7 @@ package service
 import (
 	"calend/internal/models/err_const"
 	"calend/internal/models/session"
+	"calend/internal/modules/config"
 	"calend/internal/modules/domain/auth/dto"
 	user_dto "calend/internal/modules/domain/user/dto"
 	"context"
@@ -28,10 +29,10 @@ type AuthService struct {
 	secret string
 }
 
-func NewAuthService(repo IUserRepo, secret string) *AuthService {
+func NewAuthService(repo IUserRepo, config config.Config) *AuthService {
 	return &AuthService{
 		repo:   repo,
-		secret: secret,
+		secret: config.Secret,
 	}
 }
 
@@ -95,7 +96,7 @@ func (r *AuthService) Login(ctx context.Context, userCredentials *dto.UserCreden
 		return nil, fmt.Errorf("%w: неверный пароль", err_const.ErrUnauthorized)
 	}
 
-	session := &session.Session{
+	ss := &session.Session{
 		SID:      uuid.NewString(),
 		UserUuid: currentUser.Uuid,
 	}
@@ -104,14 +105,14 @@ func (r *AuthService) Login(ctx context.Context, userCredentials *dto.UserCreden
 	expTime := time.Minute * time.Duration(AccessTokenLiveTime)  // Срок жизни токена доступа
 	nbfTime := time.Minute * time.Duration(RefreshTokenLiveTime) // Срок жизни токена обновления
 
-	token, err := r.createTokenPair(session, expTime, nbfTime)
+	token, err := r.createTokenPair(ss, expTime, nbfTime)
 	if err != nil {
 		return nil, err
 	}
 
 	return &dto.JWT{
 		Tokens:  *token,
-		Session: session,
+		Session: ss,
 	}, nil
 }
 

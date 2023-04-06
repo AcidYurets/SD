@@ -1,11 +1,12 @@
-package service
+package repo
 
 import (
 	"calend/internal/modules/db"
 	"calend/internal/modules/db/ent"
+	user_ent "calend/internal/modules/db/ent/user"
+	"calend/internal/modules/db/schema"
 	"calend/internal/modules/domain/user/dto"
 	"context"
-	"time"
 )
 
 type UserRepo struct {
@@ -19,7 +20,16 @@ func NewUserRepo(client *ent.Client) *UserRepo {
 }
 
 func (r *UserRepo) GetByUuid(ctx context.Context, uuid string) (*dto.User, error) {
-	user, err := r.client.User.Get(ctx, uuid)
+	user, err := r.client.User.Get(schema.SkipSoftDelete(ctx), uuid)
+	if err != nil {
+		return nil, db.WrapError(err)
+	}
+
+	return toDTO(user), nil
+}
+
+func (r *UserRepo) GetByLogin(ctx context.Context, login string) (*dto.User, error) {
+	user, err := r.client.User.Query().Where(user_ent.Login(login)).Only(ctx)
 	if err != nil {
 		return nil, db.WrapError(err)
 	}
@@ -36,11 +46,23 @@ func (r *UserRepo) List(ctx context.Context) (dto.Users, error) {
 	return toDTOs(users), nil
 }
 
+func (r *UserRepo) Create(ctx context.Context, dtm *dto.CreateUser) (*dto.User, error) {
+	user, err := r.client.User.Create().
+		SetPhone(dtm.Phone).
+		SetLogin(dtm.Login).
+		SetPasswordHash(dtm.PasswordHash).
+		Save(ctx)
+	if err != nil {
+		return nil, db.WrapError(err)
+	}
+
+	return toDTO(user), nil
+}
+
 func (r *UserRepo) Update(ctx context.Context, uuid string, dtm *dto.UpdateUser) (*dto.User, error) {
 	user, err := r.client.User.UpdateOneID(uuid).
 		SetPhone(dtm.Phone).
 		SetLogin(dtm.Login).
-		SetPasswordHash(dtm.PasswordHash).
 		Save(ctx)
 	if err != nil {
 		return nil, db.WrapError(err)
@@ -59,7 +81,7 @@ func (r *UserRepo) Delete(ctx context.Context, uuid string) error {
 }
 
 func (r *UserRepo) Restore(ctx context.Context, uuid string) (*dto.User, error) {
-	user, err := r.client.User.UpdateOneID(uuid).SetDeletedAt(time.Time{}).Save(ctx)
+	user, err := r.client.User.UpdateOneID(uuid).ClearDeletedAt().Save(ctx)
 	if err != nil {
 		return nil, db.WrapError(err)
 	}

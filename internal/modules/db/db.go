@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
+
+	_ "calend/internal/modules/db/ent/runtime"
 )
 
 // //go:generate go run -mod=mod entgo.io/ent/cmd/ent generate --target ./ent --template ./templates ./schema

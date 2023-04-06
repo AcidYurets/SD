@@ -28,6 +28,7 @@ type CreateEvent struct {
 	Type        string    // Тип события
 	IsWholeDay  bool      // Событие на целый день?
 	TagUuids    []string  // Массив Uuid-ов тегов события
+	CreatorUuid string    // Uuid создателя события
 }
 
 // UpdateEvent модель для создания события без приглашений

@@ -108,14 +108,12 @@ func TestEventService_CreateWithInvitations(t *testing.T) {
 
 	uuid := "123e4567-e89b-12d3-a456-426655440044"
 	createEvent := &ev_dto.CreateEvent{
-		Uuid:        uuid,
 		Timestamp:   time.Now(),
 		Name:        "Событие",
 		Description: ptr.String("Описание"),
 		Type:        "Мероприятие",
 		IsWholeDay:  false,
 		TagUuids:    []string{"Тег"},
-		CreatorUuid: "123e4567-e89b-12d3-a456-426655440001",
 	}
 	createEventInvs := ev_dto.CreateEventInvitations{
 		&ev_dto.CreateEventInvitation{
@@ -237,11 +235,11 @@ func TestEventService_Update(t *testing.T) {
 
 	uuid := "123e4567-e89b-12d3-a456-426655440044"
 	updateEvent := &ev_dto.UpdateEvent{
-		Timestamp:   ptr.Time(time.Now()),
-		Name:        ptr.String("Событие"),
+		Timestamp:   time.Now(),
+		Name:        "Событие",
 		Description: ptr.String("Описание"),
-		Type:        ptr.String("Мероприятие"),
-		IsWholeDay:  ptr.Bool(false),
+		Type:        "Мероприятие",
+		IsWholeDay:  false,
 		TagUuids:    []string{"Тег"},
 	}
 	createEventInvs := ev_dto.CreateEventInvitations{

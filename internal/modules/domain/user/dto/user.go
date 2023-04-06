@@ -16,7 +16,6 @@ type CreateUser struct {
 }
 
 type UpdateUser struct {
-	Phone        string // Телефон
-	Login        string // Логин в системе
-	PasswordHash string // Хэш пароля
+	Phone string // Телефон
+	Login string // Логин в системе
 }

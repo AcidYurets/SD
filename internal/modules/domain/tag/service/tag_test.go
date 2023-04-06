@@ -2,7 +2,6 @@ package service
 
 import (
 	dto "calend/internal/modules/domain/tag/dto"
-	"calend/internal/utils/ptr"
 	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -101,7 +100,7 @@ func TestTagService_Update(t *testing.T) {
 
 	uuid := "123e4567-e89b-12d3-a456-426655440000"
 	updateTag := &dto.UpdateTag{
-		Description: ptr.String("Тег для праздников (новое описание)"),
+		Description: "Тег для праздников (новое описание)",
 	}
 
 	expectedTag := &dto.Tag{

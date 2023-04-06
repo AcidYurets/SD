@@ -20,8 +20,8 @@ func (User) Mixin() []ent.Mixin {
 // Fields of the User.
 func (User) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("phone"),
-		field.String("login"),
+		field.String("phone").Unique(),
+		field.String("login").Unique(),
 		field.String("password_hash"),
 	}
 }
