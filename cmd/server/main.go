@@ -1,20 +1,21 @@
 package main
 
 import (
+	"calend/internal/modules"
 	"fmt"
 	"go.uber.org/fx"
 )
 
 func main() {
 	fx.New(
-		//modules.AppModule,
-		//modules.AppInvokables,
-		fx.Provide(
-			ProvideSearchRepo,
-		),
-		fx.Invoke(
-			InvokeService,
-		),
+		modules.AppModule,
+		modules.AppInvokables,
+		//fx.Provide(
+		//	ProvideSearchRepo,
+		//),
+		//fx.Invoke(
+		//	InvokeService,
+		//),
 	).Run()
 }
 

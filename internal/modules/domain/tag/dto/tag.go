@@ -14,6 +14,6 @@ type CreateTag struct {
 }
 
 type UpdateTag struct {
-	Name        *string // Наименование
-	Description *string // Описание
+	Name        string // Наименование
+	Description string // Описание
 }
