@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 
+	"calend/internal/models/access"
 	"calend/internal/modules/db/ent/migrate"
 
 	"calend/internal/modules/db/ent/accessright"
@@ -275,7 +276,7 @@ func (c *AccessRightClient) UpdateOne(ar *AccessRight) *AccessRightUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *AccessRightClient) UpdateOneID(id string) *AccessRightUpdateOne {
+func (c *AccessRightClient) UpdateOneID(id access.Type) *AccessRightUpdateOne {
 	mutation := newAccessRightMutation(c.config, OpUpdateOne, withAccessRightID(id))
 	return &AccessRightUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -292,7 +293,7 @@ func (c *AccessRightClient) DeleteOne(ar *AccessRight) *AccessRightDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *AccessRightClient) DeleteOneID(id string) *AccessRightDeleteOne {
+func (c *AccessRightClient) DeleteOneID(id access.Type) *AccessRightDeleteOne {
 	builder := c.Delete().Where(accessright.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -309,12 +310,12 @@ func (c *AccessRightClient) Query() *AccessRightQuery {
 }
 
 // Get returns a AccessRight entity by its id.
-func (c *AccessRightClient) Get(ctx context.Context, id string) (*AccessRight, error) {
+func (c *AccessRightClient) Get(ctx context.Context, id access.Type) (*AccessRight, error) {
 	return c.Query().Where(accessright.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *AccessRightClient) GetX(ctx context.Context, id string) *AccessRight {
+func (c *AccessRightClient) GetX(ctx context.Context, id access.Type) *AccessRight {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)

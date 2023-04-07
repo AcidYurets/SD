@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"calend/internal/models/access"
 	tag_dto "calend/internal/modules/domain/tag/dto"
 	user_dto "calend/internal/modules/domain/user/dto"
 	"time"
@@ -43,8 +44,8 @@ type UpdateEvent struct {
 
 // CreateEventInvitation модель для создания приглашений вмести с событием
 type CreateEventInvitation struct {
-	UserUuid        string // Uuid приглашенного пользователя
-	AccessRightCode string // Код права доступа
+	UserUuid        string      // Uuid приглашенного пользователя
+	AccessRightCode access.Type // Код права доступа
 }
 
 type CreateEventInvitations []*CreateEventInvitation

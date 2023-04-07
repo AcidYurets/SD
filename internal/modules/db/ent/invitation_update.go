@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"calend/internal/models/access"
 	"calend/internal/modules/db/ent/accessright"
 	"calend/internal/modules/db/ent/event"
 	"calend/internal/modules/db/ent/invitation"
@@ -69,13 +70,13 @@ func (iu *InvitationUpdate) SetUser(u *User) *InvitationUpdate {
 }
 
 // SetAccessRightID sets the "access_right" edge to the AccessRight entity by ID.
-func (iu *InvitationUpdate) SetAccessRightID(id string) *InvitationUpdate {
+func (iu *InvitationUpdate) SetAccessRightID(id access.Type) *InvitationUpdate {
 	iu.mutation.SetAccessRightID(id)
 	return iu
 }
 
 // SetNillableAccessRightID sets the "access_right" edge to the AccessRight entity by ID if the given value is not nil.
-func (iu *InvitationUpdate) SetNillableAccessRightID(id *string) *InvitationUpdate {
+func (iu *InvitationUpdate) SetNillableAccessRightID(id *access.Type) *InvitationUpdate {
 	if id != nil {
 		iu = iu.SetAccessRightID(*id)
 	}
@@ -292,13 +293,13 @@ func (iuo *InvitationUpdateOne) SetUser(u *User) *InvitationUpdateOne {
 }
 
 // SetAccessRightID sets the "access_right" edge to the AccessRight entity by ID.
-func (iuo *InvitationUpdateOne) SetAccessRightID(id string) *InvitationUpdateOne {
+func (iuo *InvitationUpdateOne) SetAccessRightID(id access.Type) *InvitationUpdateOne {
 	iuo.mutation.SetAccessRightID(id)
 	return iuo
 }
 
 // SetNillableAccessRightID sets the "access_right" edge to the AccessRight entity by ID if the given value is not nil.
-func (iuo *InvitationUpdateOne) SetNillableAccessRightID(id *string) *InvitationUpdateOne {
+func (iuo *InvitationUpdateOne) SetNillableAccessRightID(id *access.Type) *InvitationUpdateOne {
 	if id != nil {
 		iuo = iuo.SetAccessRightID(*id)
 	}

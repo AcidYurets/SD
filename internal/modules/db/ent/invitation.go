@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"calend/internal/models/access"
 	"calend/internal/modules/db/ent/accessright"
 	"calend/internal/modules/db/ent/event"
 	"calend/internal/modules/db/ent/invitation"
@@ -21,7 +22,7 @@ type Invitation struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the InvitationQuery when eager-loading is set.
 	Edges             InvitationEdges `json:"edges"`
-	access_right_code *string
+	access_right_code *access.Type
 	event_uuid        *string
 	user_uuid         *string
 }
@@ -116,8 +117,8 @@ func (i *Invitation) assignValues(columns []string, values []any) error {
 			if value, ok := values[j].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field access_right_code", values[j])
 			} else if value.Valid {
-				i.access_right_code = new(string)
-				*i.access_right_code = value.String
+				i.access_right_code = new(access.Type)
+				*i.access_right_code = access.Type(value.String)
 			}
 		case invitation.ForeignKeys[1]:
 			if value, ok := values[j].(*sql.NullString); !ok {

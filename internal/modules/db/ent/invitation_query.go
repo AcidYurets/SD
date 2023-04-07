@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"calend/internal/models/access"
 	"calend/internal/modules/db/ent/accessright"
 	"calend/internal/modules/db/ent/event"
 	"calend/internal/modules/db/ent/invitation"
@@ -537,8 +538,8 @@ func (iq *InvitationQuery) loadUser(ctx context.Context, query *UserQuery, nodes
 	return nil
 }
 func (iq *InvitationQuery) loadAccessRight(ctx context.Context, query *AccessRightQuery, nodes []*Invitation, init func(*Invitation), assign func(*Invitation, *AccessRight)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Invitation)
+	ids := make([]access.Type, 0, len(nodes))
+	nodeids := make(map[access.Type][]*Invitation)
 	for i := range nodes {
 		if nodes[i].access_right_code == nil {
 			continue

@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"calend/internal/models/access"
 	"calend/internal/modules/db/ent/accessright"
 	"calend/internal/modules/db/ent/event"
 	"calend/internal/modules/db/ent/invitation"
@@ -74,13 +75,13 @@ func (ic *InvitationCreate) SetUser(u *User) *InvitationCreate {
 }
 
 // SetAccessRightID sets the "access_right" edge to the AccessRight entity by ID.
-func (ic *InvitationCreate) SetAccessRightID(id string) *InvitationCreate {
+func (ic *InvitationCreate) SetAccessRightID(id access.Type) *InvitationCreate {
 	ic.mutation.SetAccessRightID(id)
 	return ic
 }
 
 // SetNillableAccessRightID sets the "access_right" edge to the AccessRight entity by ID if the given value is not nil.
-func (ic *InvitationCreate) SetNillableAccessRightID(id *string) *InvitationCreate {
+func (ic *InvitationCreate) SetNillableAccessRightID(id *access.Type) *InvitationCreate {
 	if id != nil {
 		ic = ic.SetAccessRightID(*id)
 	}

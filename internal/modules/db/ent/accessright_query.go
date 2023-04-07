@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"calend/internal/models/access"
 	"calend/internal/modules/db/ent/accessright"
 	"calend/internal/modules/db/ent/invitation"
 	"calend/internal/modules/db/ent/predicate"
@@ -106,8 +107,8 @@ func (arq *AccessRightQuery) FirstX(ctx context.Context) *AccessRight {
 
 // FirstID returns the first AccessRight ID from the query.
 // Returns a *NotFoundError when no AccessRight ID was found.
-func (arq *AccessRightQuery) FirstID(ctx context.Context) (id string, err error) {
-	var ids []string
+func (arq *AccessRightQuery) FirstID(ctx context.Context) (id access.Type, err error) {
+	var ids []access.Type
 	if ids, err = arq.Limit(1).IDs(setContextOp(ctx, arq.ctx, "FirstID")); err != nil {
 		return
 	}
@@ -119,7 +120,7 @@ func (arq *AccessRightQuery) FirstID(ctx context.Context) (id string, err error)
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (arq *AccessRightQuery) FirstIDX(ctx context.Context) string {
+func (arq *AccessRightQuery) FirstIDX(ctx context.Context) access.Type {
 	id, err := arq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -157,8 +158,8 @@ func (arq *AccessRightQuery) OnlyX(ctx context.Context) *AccessRight {
 // OnlyID is like Only, but returns the only AccessRight ID in the query.
 // Returns a *NotSingularError when more than one AccessRight ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (arq *AccessRightQuery) OnlyID(ctx context.Context) (id string, err error) {
-	var ids []string
+func (arq *AccessRightQuery) OnlyID(ctx context.Context) (id access.Type, err error) {
+	var ids []access.Type
 	if ids, err = arq.Limit(2).IDs(setContextOp(ctx, arq.ctx, "OnlyID")); err != nil {
 		return
 	}
@@ -174,7 +175,7 @@ func (arq *AccessRightQuery) OnlyID(ctx context.Context) (id string, err error) 
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (arq *AccessRightQuery) OnlyIDX(ctx context.Context) string {
+func (arq *AccessRightQuery) OnlyIDX(ctx context.Context) access.Type {
 	id, err := arq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -202,7 +203,7 @@ func (arq *AccessRightQuery) AllX(ctx context.Context) []*AccessRight {
 }
 
 // IDs executes the query and returns a list of AccessRight IDs.
-func (arq *AccessRightQuery) IDs(ctx context.Context) (ids []string, err error) {
+func (arq *AccessRightQuery) IDs(ctx context.Context) (ids []access.Type, err error) {
 	if arq.ctx.Unique == nil && arq.path != nil {
 		arq.Unique(true)
 	}
@@ -214,7 +215,7 @@ func (arq *AccessRightQuery) IDs(ctx context.Context) (ids []string, err error) 
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (arq *AccessRightQuery) IDsX(ctx context.Context) []string {
+func (arq *AccessRightQuery) IDsX(ctx context.Context) []access.Type {
 	ids, err := arq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -404,7 +405,7 @@ func (arq *AccessRightQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 
 func (arq *AccessRightQuery) loadInvitations(ctx context.Context, query *InvitationQuery, nodes []*AccessRight, init func(*AccessRight), assign func(*AccessRight, *Invitation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*AccessRight)
+	nodeids := make(map[access.Type]*AccessRight)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]

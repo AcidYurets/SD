@@ -25,7 +25,7 @@ func (r *UserRepo) GetByUuid(ctx context.Context, uuid string) (*dto.User, error
 		return nil, db.WrapError(err)
 	}
 
-	return toDTO(user), nil
+	return ToUserDTO(user), nil
 }
 
 func (r *UserRepo) GetByLogin(ctx context.Context, login string) (*dto.User, error) {
@@ -34,7 +34,7 @@ func (r *UserRepo) GetByLogin(ctx context.Context, login string) (*dto.User, err
 		return nil, db.WrapError(err)
 	}
 
-	return toDTO(user), nil
+	return ToUserDTO(user), nil
 }
 
 func (r *UserRepo) List(ctx context.Context) (dto.Users, error) {
@@ -43,7 +43,7 @@ func (r *UserRepo) List(ctx context.Context) (dto.Users, error) {
 		return nil, db.WrapError(err)
 	}
 
-	return toDTOs(users), nil
+	return ToUserDTOs(users), nil
 }
 
 func (r *UserRepo) Create(ctx context.Context, dtm *dto.CreateUser) (*dto.User, error) {
@@ -56,7 +56,7 @@ func (r *UserRepo) Create(ctx context.Context, dtm *dto.CreateUser) (*dto.User, 
 		return nil, db.WrapError(err)
 	}
 
-	return toDTO(user), nil
+	return ToUserDTO(user), nil
 }
 
 func (r *UserRepo) Update(ctx context.Context, uuid string, dtm *dto.UpdateUser) (*dto.User, error) {
@@ -68,7 +68,7 @@ func (r *UserRepo) Update(ctx context.Context, uuid string, dtm *dto.UpdateUser)
 		return nil, db.WrapError(err)
 	}
 
-	return toDTO(user), nil
+	return ToUserDTO(user), nil
 }
 
 func (r *UserRepo) Delete(ctx context.Context, uuid string) error {
@@ -86,10 +86,13 @@ func (r *UserRepo) Restore(ctx context.Context, uuid string) (*dto.User, error) 
 		return nil, db.WrapError(err)
 	}
 
-	return toDTO(user), nil
+	return ToUserDTO(user), nil
 }
 
-func toDTO(model *ent.User) *dto.User {
+func ToUserDTO(model *ent.User) *dto.User {
+	if model == nil {
+		return nil
+	}
 	return &dto.User{
 		Uuid:         model.ID,
 		Phone:        model.Phone,
@@ -98,13 +101,13 @@ func toDTO(model *ent.User) *dto.User {
 	}
 }
 
-func toDTOs(models ent.Users) dto.Users {
+func ToUserDTOs(models ent.Users) dto.Users {
 	if models == nil {
 		return nil
 	}
 	dtms := make(dto.Users, len(models))
 	for i := range models {
-		dtms[i] = toDTO(models[i])
+		dtms[i] = ToUserDTO(models[i])
 	}
 	return dtms
 }

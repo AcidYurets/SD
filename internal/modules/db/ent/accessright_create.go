@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"calend/internal/models/access"
 	"calend/internal/modules/db/ent/accessright"
 	"calend/internal/modules/db/ent/invitation"
 	"context"
@@ -27,8 +28,8 @@ func (arc *AccessRightCreate) SetDescription(s string) *AccessRightCreate {
 }
 
 // SetID sets the "id" field.
-func (arc *AccessRightCreate) SetID(s string) *AccessRightCreate {
-	arc.mutation.SetID(s)
+func (arc *AccessRightCreate) SetID(a access.Type) *AccessRightCreate {
+	arc.mutation.SetID(a)
 	return arc
 }
 
@@ -99,7 +100,7 @@ func (arc *AccessRightCreate) sqlSave(ctx context.Context) (*AccessRight, error)
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(string); ok {
+		if id, ok := _spec.ID.Value.(access.Type); ok {
 			_node.ID = id
 		} else {
 			return nil, fmt.Errorf("unexpected AccessRight.ID type: %T", _spec.ID.Value)

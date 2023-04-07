@@ -13,6 +13,7 @@ type ITagRepo interface {
 	Create(ctx context.Context, dtm *dto.CreateTag) (*dto.Tag, error)
 	Update(ctx context.Context, uuid string, dtm *dto.UpdateTag) (*dto.Tag, error)
 	Delete(ctx context.Context, uuid string) error
+	Restore(ctx context.Context, uuid string) (*dto.Tag, error)
 }
 
 type TagService struct {
@@ -43,4 +44,8 @@ func (r *TagService) Update(ctx context.Context, uuid string, dtm *dto.UpdateTag
 
 func (r *TagService) Delete(ctx context.Context, uuid string) error {
 	return r.repo.Delete(ctx, uuid)
+}
+
+func (r *TagService) Restore(ctx context.Context, uuid string) (*dto.Tag, error) {
+	return r.repo.Restore(ctx, uuid)
 }

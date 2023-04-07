@@ -34,5 +34,6 @@ const (
 
 	ErrValidateModel = Const("Ошибка валидации модели")
 
-	ErrAccessDenied = Const("недостаточно прав")
+	ErrAccessDenied          = Const("недостаточно прав")
+	ErrMissingRequiredFields = Const("не хватает необходимых полей")
 )

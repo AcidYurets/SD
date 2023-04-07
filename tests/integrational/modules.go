@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	TestModule = fx.Options(
+	testModule = fx.Options(
 		app.Module,
 		logger.Module,
 		config.Module,
@@ -23,8 +23,7 @@ var (
 			return &fxevent.ZapLogger{Logger: log}
 		}),
 	)
-
-	TestInvokables = fx.Options(
+	testInvokables = fx.Options(
 		app.Invokables,
 		logger.Invokables,
 		config.Invokables,

@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func UserServiceTest(t *testing.T, userService *user_serv.UserService, authService *auth_serv.AuthService, client *ent.Client) {
+func userServiceTest(t *testing.T, userService *user_serv.UserService, authService *auth_serv.AuthService, client *ent.Client) {
 	_, err := client.User.Delete().Exec(schema.SkipSoftDelete(context.Background()))
 	assert.NoError(t, err)
 	// Если не получилось - дальше продолжать смысла нет

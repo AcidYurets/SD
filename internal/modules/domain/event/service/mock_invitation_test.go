@@ -51,11 +51,12 @@ func (mr *MockIInvitationRepoMockRecorder) CreateBulk(arg0, arg1 interface{}) *g
 }
 
 // DeleteByEventUuid mocks base method.
-func (m *MockIInvitationRepo) DeleteByEventUuid(arg0 context.Context, arg1 string) error {
+func (m *MockIInvitationRepo) DeleteByEventUuid(arg0 context.Context, arg1 string) (int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteByEventUuid", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // DeleteByEventUuid indicates an expected call of DeleteByEventUuid.

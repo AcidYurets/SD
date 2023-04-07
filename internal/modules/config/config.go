@@ -32,8 +32,9 @@ type Config struct {
 
 func NewConfig(app app.App, logger *zap.Logger, logLevel zap.AtomicLevel) (Config, error) {
 	config := Config{
-		AutoMigrate: true,
-		Secret:      "123",
+		AutoMigrate:      true,
+		TraceSQLCommands: true,
+		Secret:           "123",
 	}
 
 	logger.Info("получена конфигурация", zap.Any("config", config))

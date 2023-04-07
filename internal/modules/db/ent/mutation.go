@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"calend/internal/models/access"
 	"calend/internal/modules/db/ent/accessright"
 	"calend/internal/modules/db/ent/event"
 	"calend/internal/modules/db/ent/invitation"
@@ -40,7 +41,7 @@ type AccessRightMutation struct {
 	config
 	op                 Op
 	typ                string
-	id                 *string
+	id                 *access.Type
 	description        *string
 	clearedFields      map[string]struct{}
 	invitations        map[string]struct{}
@@ -71,7 +72,7 @@ func newAccessRightMutation(c config, op Op, opts ...accessrightOption) *AccessR
 }
 
 // withAccessRightID sets the ID field of the mutation.
-func withAccessRightID(id string) accessrightOption {
+func withAccessRightID(id access.Type) accessrightOption {
 	return func(m *AccessRightMutation) {
 		var (
 			err   error
@@ -123,13 +124,13 @@ func (m AccessRightMutation) Tx() (*Tx, error) {
 
 // SetID sets the value of the id field. Note that this
 // operation is only accepted on creation of AccessRight entities.
-func (m *AccessRightMutation) SetID(id string) {
+func (m *AccessRightMutation) SetID(id access.Type) {
 	m.id = &id
 }
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *AccessRightMutation) ID() (id string, exists bool) {
+func (m *AccessRightMutation) ID() (id access.Type, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -140,12 +141,12 @@ func (m *AccessRightMutation) ID() (id string, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *AccessRightMutation) IDs(ctx context.Context) ([]string, error) {
+func (m *AccessRightMutation) IDs(ctx context.Context) ([]access.Type, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []string{id}, nil
+			return []access.Type{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -1457,7 +1458,7 @@ type InvitationMutation struct {
 	clearedevent        bool
 	user                *string
 	cleareduser         bool
-	access_right        *string
+	access_right        *access.Type
 	clearedaccess_right bool
 	done                bool
 	oldValue            func(context.Context) (*Invitation, error)
@@ -1647,7 +1648,7 @@ func (m *InvitationMutation) ResetUser() {
 }
 
 // SetAccessRightID sets the "access_right" edge to the AccessRight entity by id.
-func (m *InvitationMutation) SetAccessRightID(id string) {
+func (m *InvitationMutation) SetAccessRightID(id access.Type) {
 	m.access_right = &id
 }
 
@@ -1662,7 +1663,7 @@ func (m *InvitationMutation) AccessRightCleared() bool {
 }
 
 // AccessRightID returns the "access_right" edge ID in the mutation.
-func (m *InvitationMutation) AccessRightID() (id string, exists bool) {
+func (m *InvitationMutation) AccessRightID() (id access.Type, exists bool) {
 	if m.access_right != nil {
 		return *m.access_right, true
 	}
@@ -1672,7 +1673,7 @@ func (m *InvitationMutation) AccessRightID() (id string, exists bool) {
 // AccessRightIDs returns the "access_right" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // AccessRightID instead. It exists only for internal usage by the builders.
-func (m *InvitationMutation) AccessRightIDs() (ids []string) {
+func (m *InvitationMutation) AccessRightIDs() (ids []access.Type) {
 	if id := m.access_right; id != nil {
 		ids = append(ids, *id)
 	}

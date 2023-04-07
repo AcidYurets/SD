@@ -14,21 +14,27 @@ import (
 //go:generate mockgen -destination mock_invitation_test.go -package service . IInvitationRepo
 
 type IEventRepo interface {
+	// GetByUuid получение по uuid события вместе со связанными сущностями
 	GetByUuid(ctx context.Context, uuid string) (*dto.Event, error)
-	// Create создает событие без приглашений
-	Create(ctx context.Context, dtm *dto.CreateEvent) (*dto.Event, error)
-	Update(ctx context.Context, uuid string, dtm *dto.UpdateEvent) (*dto.Event, error)
-	Delete(ctx context.Context, uuid string) error
-
-	// ListAvailable ищет все доступные пользователю события, т.е.
+	// GetCheckingInfoByUuid получение по uuid события только необходимыми для проверки прав доступа полями
+	GetCheckingInfoByUuid(ctx context.Context, uuid string) (*dto.Event, error)
+	// ListAvailable ищет все доступные пользователю события вместе со связанными сущностями, т.е.
 	//  1. события, которые он создал;
 	//  2. события, к которым он приглашен.
 	ListAvailable(ctx context.Context, userUuid string) (dto.Events, error)
+	// Create создает событие без приглашений, возвращает событие без связанных сущностей
+	Create(ctx context.Context, dtm *dto.CreateEvent) (*dto.Event, error)
+	// Update обновляет событие не изменяя приглашения, возвращает событие без связанных сущностей
+	Update(ctx context.Context, uuid string, dtm *dto.UpdateEvent) (*dto.Event, error)
+	// Delete удаляет событие, не удаляя его приглашения
+	Delete(ctx context.Context, uuid string) error
 }
 
 type IInvitationRepo interface {
+	// CreateBulk разом создает несколько приглашений
 	CreateBulk(ctx context.Context, dtms dto.CreateInvitations) (dto.Invitations, error)
-	DeleteByEventUuid(ctx context.Context, eventUuid string) error
+	// DeleteByEventUuid удаляет все приглашения определенного события
+	DeleteByEventUuid(ctx context.Context, eventUuid string) (int, error)
 }
 
 type EventService struct {
@@ -143,7 +149,7 @@ func (r *EventService) Update(ctx context.Context, uuid string, updEvent *dto.Up
 	}
 
 	// Удаляем все приглашения события
-	if err := r.invRepo.DeleteByEventUuid(ctx, uuid); err != nil {
+	if _, err := r.invRepo.DeleteByEventUuid(ctx, uuid); err != nil {
 		return nil, fmt.Errorf("ошибка при удалении приглашений: %w", err)
 	}
 
@@ -177,7 +183,7 @@ func (r *EventService) Delete(ctx context.Context, uuid string) error {
 	}
 
 	// Удаляем все приглашения события
-	if err := r.invRepo.DeleteByEventUuid(ctx, uuid); err != nil {
+	if _, err := r.invRepo.DeleteByEventUuid(ctx, uuid); err != nil {
 		return fmt.Errorf("ошибка при удалении приглашений: %w", err)
 	}
 
@@ -195,9 +201,14 @@ func (r *EventService) checkAvailable(ctx context.Context, eventUuid string, opC
 		return err
 	}
 
-	event, err := r.eventRepo.GetByUuid(ctx, eventUuid)
+	event, err := r.eventRepo.GetCheckingInfoByUuid(ctx, eventUuid)
 	if err != nil {
 		return fmt.Errorf("ошибка при получении события: %w", err)
+	}
+
+	// Проверяем, присутствуют ли в событии необходимые поля о создателе
+	if event == nil || event.Creator == nil || event.Creator.Uuid == "" {
+		return err_const.ErrMissingRequiredFields
 	}
 
 	// Если текущий пользователь -- создатель, то у него полный доступ
@@ -206,6 +217,12 @@ func (r *EventService) checkAvailable(ctx context.Context, eventUuid string, opC
 	}
 
 	for _, inv := range event.Invitations {
+		// Проверяем, присутствуют ли в приглашении необходимые поля о пользователе и праве доступа
+		if inv == nil || inv.User == nil || inv.User.Uuid == "" ||
+			inv.AccessRight == nil || inv.AccessRight.Code == "" {
+			return err_const.ErrMissingRequiredFields
+		}
+
 		// Если пользователь приглашен к событию, то проверяем его права доступа
 		if inv.User.Uuid == userUuid {
 			// Если есть необходимое право

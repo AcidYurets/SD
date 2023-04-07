@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"calend/internal/models/access"
 	"calend/internal/modules/db/ent/accessright"
 	"fmt"
 	"strings"
@@ -14,7 +15,7 @@ import (
 type AccessRight struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID string `json:"id,omitempty"`
+	ID access.Type `json:"id,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -66,7 +67,7 @@ func (ar *AccessRight) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value.Valid {
-				ar.ID = value.String
+				ar.ID = access.Type(value.String)
 			}
 		case accessright.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {

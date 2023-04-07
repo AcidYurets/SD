@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"calend/internal/models/access"
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -16,6 +17,7 @@ func (AccessRight) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").
 			Immutable().
+			GoType(access.Type("")).
 			StorageKey("code"),
 		field.String("description"),
 	}
