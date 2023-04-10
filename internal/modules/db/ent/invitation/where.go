@@ -3,6 +3,7 @@
 package invitation
 
 import (
+	"calend/internal/models/access"
 	"calend/internal/modules/db/ent/predicate"
 
 	"entgo.io/ent/dialect/sql"
@@ -62,6 +63,236 @@ func IDEqualFold(id string) predicate.Invitation {
 // IDContainsFold applies the ContainsFold predicate on the ID field.
 func IDContainsFold(id string) predicate.Invitation {
 	return predicate.Invitation(sql.FieldContainsFold(FieldID, id))
+}
+
+// UserUUID applies equality check predicate on the "user_uuid" field. It's identical to UserUUIDEQ.
+func UserUUID(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldEQ(FieldUserUUID, v))
+}
+
+// EventUUID applies equality check predicate on the "event_uuid" field. It's identical to EventUUIDEQ.
+func EventUUID(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldEQ(FieldEventUUID, v))
+}
+
+// AccessRightCode applies equality check predicate on the "access_right_code" field. It's identical to AccessRightCodeEQ.
+func AccessRightCode(v access.Type) predicate.Invitation {
+	vc := string(v)
+	return predicate.Invitation(sql.FieldEQ(FieldAccessRightCode, vc))
+}
+
+// UserUUIDEQ applies the EQ predicate on the "user_uuid" field.
+func UserUUIDEQ(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldEQ(FieldUserUUID, v))
+}
+
+// UserUUIDNEQ applies the NEQ predicate on the "user_uuid" field.
+func UserUUIDNEQ(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldNEQ(FieldUserUUID, v))
+}
+
+// UserUUIDIn applies the In predicate on the "user_uuid" field.
+func UserUUIDIn(vs ...string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldIn(FieldUserUUID, vs...))
+}
+
+// UserUUIDNotIn applies the NotIn predicate on the "user_uuid" field.
+func UserUUIDNotIn(vs ...string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldNotIn(FieldUserUUID, vs...))
+}
+
+// UserUUIDGT applies the GT predicate on the "user_uuid" field.
+func UserUUIDGT(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldGT(FieldUserUUID, v))
+}
+
+// UserUUIDGTE applies the GTE predicate on the "user_uuid" field.
+func UserUUIDGTE(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldGTE(FieldUserUUID, v))
+}
+
+// UserUUIDLT applies the LT predicate on the "user_uuid" field.
+func UserUUIDLT(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldLT(FieldUserUUID, v))
+}
+
+// UserUUIDLTE applies the LTE predicate on the "user_uuid" field.
+func UserUUIDLTE(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldLTE(FieldUserUUID, v))
+}
+
+// UserUUIDContains applies the Contains predicate on the "user_uuid" field.
+func UserUUIDContains(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldContains(FieldUserUUID, v))
+}
+
+// UserUUIDHasPrefix applies the HasPrefix predicate on the "user_uuid" field.
+func UserUUIDHasPrefix(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldHasPrefix(FieldUserUUID, v))
+}
+
+// UserUUIDHasSuffix applies the HasSuffix predicate on the "user_uuid" field.
+func UserUUIDHasSuffix(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldHasSuffix(FieldUserUUID, v))
+}
+
+// UserUUIDEqualFold applies the EqualFold predicate on the "user_uuid" field.
+func UserUUIDEqualFold(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldEqualFold(FieldUserUUID, v))
+}
+
+// UserUUIDContainsFold applies the ContainsFold predicate on the "user_uuid" field.
+func UserUUIDContainsFold(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldContainsFold(FieldUserUUID, v))
+}
+
+// EventUUIDEQ applies the EQ predicate on the "event_uuid" field.
+func EventUUIDEQ(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldEQ(FieldEventUUID, v))
+}
+
+// EventUUIDNEQ applies the NEQ predicate on the "event_uuid" field.
+func EventUUIDNEQ(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldNEQ(FieldEventUUID, v))
+}
+
+// EventUUIDIn applies the In predicate on the "event_uuid" field.
+func EventUUIDIn(vs ...string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldIn(FieldEventUUID, vs...))
+}
+
+// EventUUIDNotIn applies the NotIn predicate on the "event_uuid" field.
+func EventUUIDNotIn(vs ...string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldNotIn(FieldEventUUID, vs...))
+}
+
+// EventUUIDGT applies the GT predicate on the "event_uuid" field.
+func EventUUIDGT(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldGT(FieldEventUUID, v))
+}
+
+// EventUUIDGTE applies the GTE predicate on the "event_uuid" field.
+func EventUUIDGTE(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldGTE(FieldEventUUID, v))
+}
+
+// EventUUIDLT applies the LT predicate on the "event_uuid" field.
+func EventUUIDLT(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldLT(FieldEventUUID, v))
+}
+
+// EventUUIDLTE applies the LTE predicate on the "event_uuid" field.
+func EventUUIDLTE(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldLTE(FieldEventUUID, v))
+}
+
+// EventUUIDContains applies the Contains predicate on the "event_uuid" field.
+func EventUUIDContains(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldContains(FieldEventUUID, v))
+}
+
+// EventUUIDHasPrefix applies the HasPrefix predicate on the "event_uuid" field.
+func EventUUIDHasPrefix(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldHasPrefix(FieldEventUUID, v))
+}
+
+// EventUUIDHasSuffix applies the HasSuffix predicate on the "event_uuid" field.
+func EventUUIDHasSuffix(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldHasSuffix(FieldEventUUID, v))
+}
+
+// EventUUIDEqualFold applies the EqualFold predicate on the "event_uuid" field.
+func EventUUIDEqualFold(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldEqualFold(FieldEventUUID, v))
+}
+
+// EventUUIDContainsFold applies the ContainsFold predicate on the "event_uuid" field.
+func EventUUIDContainsFold(v string) predicate.Invitation {
+	return predicate.Invitation(sql.FieldContainsFold(FieldEventUUID, v))
+}
+
+// AccessRightCodeEQ applies the EQ predicate on the "access_right_code" field.
+func AccessRightCodeEQ(v access.Type) predicate.Invitation {
+	vc := string(v)
+	return predicate.Invitation(sql.FieldEQ(FieldAccessRightCode, vc))
+}
+
+// AccessRightCodeNEQ applies the NEQ predicate on the "access_right_code" field.
+func AccessRightCodeNEQ(v access.Type) predicate.Invitation {
+	vc := string(v)
+	return predicate.Invitation(sql.FieldNEQ(FieldAccessRightCode, vc))
+}
+
+// AccessRightCodeIn applies the In predicate on the "access_right_code" field.
+func AccessRightCodeIn(vs ...access.Type) predicate.Invitation {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = string(vs[i])
+	}
+	return predicate.Invitation(sql.FieldIn(FieldAccessRightCode, v...))
+}
+
+// AccessRightCodeNotIn applies the NotIn predicate on the "access_right_code" field.
+func AccessRightCodeNotIn(vs ...access.Type) predicate.Invitation {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = string(vs[i])
+	}
+	return predicate.Invitation(sql.FieldNotIn(FieldAccessRightCode, v...))
+}
+
+// AccessRightCodeGT applies the GT predicate on the "access_right_code" field.
+func AccessRightCodeGT(v access.Type) predicate.Invitation {
+	vc := string(v)
+	return predicate.Invitation(sql.FieldGT(FieldAccessRightCode, vc))
+}
+
+// AccessRightCodeGTE applies the GTE predicate on the "access_right_code" field.
+func AccessRightCodeGTE(v access.Type) predicate.Invitation {
+	vc := string(v)
+	return predicate.Invitation(sql.FieldGTE(FieldAccessRightCode, vc))
+}
+
+// AccessRightCodeLT applies the LT predicate on the "access_right_code" field.
+func AccessRightCodeLT(v access.Type) predicate.Invitation {
+	vc := string(v)
+	return predicate.Invitation(sql.FieldLT(FieldAccessRightCode, vc))
+}
+
+// AccessRightCodeLTE applies the LTE predicate on the "access_right_code" field.
+func AccessRightCodeLTE(v access.Type) predicate.Invitation {
+	vc := string(v)
+	return predicate.Invitation(sql.FieldLTE(FieldAccessRightCode, vc))
+}
+
+// AccessRightCodeContains applies the Contains predicate on the "access_right_code" field.
+func AccessRightCodeContains(v access.Type) predicate.Invitation {
+	vc := string(v)
+	return predicate.Invitation(sql.FieldContains(FieldAccessRightCode, vc))
+}
+
+// AccessRightCodeHasPrefix applies the HasPrefix predicate on the "access_right_code" field.
+func AccessRightCodeHasPrefix(v access.Type) predicate.Invitation {
+	vc := string(v)
+	return predicate.Invitation(sql.FieldHasPrefix(FieldAccessRightCode, vc))
+}
+
+// AccessRightCodeHasSuffix applies the HasSuffix predicate on the "access_right_code" field.
+func AccessRightCodeHasSuffix(v access.Type) predicate.Invitation {
+	vc := string(v)
+	return predicate.Invitation(sql.FieldHasSuffix(FieldAccessRightCode, vc))
+}
+
+// AccessRightCodeEqualFold applies the EqualFold predicate on the "access_right_code" field.
+func AccessRightCodeEqualFold(v access.Type) predicate.Invitation {
+	vc := string(v)
+	return predicate.Invitation(sql.FieldEqualFold(FieldAccessRightCode, vc))
+}
+
+// AccessRightCodeContainsFold applies the ContainsFold predicate on the "access_right_code" field.
+func AccessRightCodeContainsFold(v access.Type) predicate.Invitation {
+	vc := string(v)
+	return predicate.Invitation(sql.FieldContainsFold(FieldAccessRightCode, vc))
 }
 
 // HasEvent applies the HasEdge predicate on the "event" edge.

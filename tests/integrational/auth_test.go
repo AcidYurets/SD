@@ -2,7 +2,6 @@ package integrational
 
 import (
 	"calend/internal/modules/db/ent"
-	"calend/internal/modules/db/schema"
 	auth_dto "calend/internal/modules/domain/auth/dto"
 	auth_serv "calend/internal/modules/domain/auth/service"
 	user_serv "calend/internal/modules/domain/user/service"
@@ -12,9 +11,8 @@ import (
 )
 
 func authServiceTest(t *testing.T, userService *user_serv.UserService, authService *auth_serv.AuthService, client *ent.Client) {
-	_, err := client.User.Delete().Exec(schema.SkipSoftDelete(context.Background()))
+	err := truncateAll(client)
 	assert.NoError(t, err)
-	// Если не получилось - дальше продолжать смысла нет
 	if err != nil {
 		return
 	}

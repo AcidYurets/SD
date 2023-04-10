@@ -5,9 +5,7 @@ import (
 	"calend/internal/modules/db/ent"
 	event_ent "calend/internal/modules/db/ent/event"
 	inv_ent "calend/internal/modules/db/ent/invitation"
-	ar_repo "calend/internal/modules/domain/access_right/repo"
 	"calend/internal/modules/domain/event/dto"
-	user_repo "calend/internal/modules/domain/user/repo"
 	"context"
 )
 
@@ -54,9 +52,9 @@ func ToInvitationDTO(model *ent.Invitation) *dto.Invitation {
 		return nil
 	}
 	return &dto.Invitation{
-		Uuid:        model.ID,
-		User:        user_repo.ToUserDTO(model.Edges.User),
-		AccessRight: ar_repo.ToAccessRightDTO(model.Edges.AccessRight),
+		Uuid:            model.ID,
+		UserUuid:        model.UserUUID,
+		AccessRightCode: model.AccessRightCode,
 	}
 }
 

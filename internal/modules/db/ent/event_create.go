@@ -103,6 +103,12 @@ func (ec *EventCreate) SetIsWholeDay(b bool) *EventCreate {
 	return ec
 }
 
+// SetCreatorUUID sets the "creator_uuid" field.
+func (ec *EventCreate) SetCreatorUUID(s string) *EventCreate {
+	ec.mutation.SetCreatorUUID(s)
+	return ec
+}
+
 // SetID sets the "id" field.
 func (ec *EventCreate) SetID(s string) *EventCreate {
 	ec.mutation.SetID(s)
@@ -150,14 +156,6 @@ func (ec *EventCreate) AddInvitations(i ...*Invitation) *EventCreate {
 // SetCreatorID sets the "creator" edge to the User entity by ID.
 func (ec *EventCreate) SetCreatorID(id string) *EventCreate {
 	ec.mutation.SetCreatorID(id)
-	return ec
-}
-
-// SetNillableCreatorID sets the "creator" edge to the User entity by ID if the given value is not nil.
-func (ec *EventCreate) SetNillableCreatorID(id *string) *EventCreate {
-	if id != nil {
-		ec = ec.SetCreatorID(*id)
-	}
 	return ec
 }
 
@@ -246,6 +244,12 @@ func (ec *EventCreate) check() error {
 	}
 	if _, ok := ec.mutation.IsWholeDay(); !ok {
 		return &ValidationError{Name: "is_whole_day", err: errors.New(`ent: missing required field "Event.is_whole_day"`)}
+	}
+	if _, ok := ec.mutation.CreatorUUID(); !ok {
+		return &ValidationError{Name: "creator_uuid", err: errors.New(`ent: missing required field "Event.creator_uuid"`)}
+	}
+	if _, ok := ec.mutation.CreatorID(); !ok {
+		return &ValidationError{Name: "creator", err: errors.New(`ent: missing required edge "Event.creator"`)}
 	}
 	return nil
 }
@@ -360,7 +364,7 @@ func (ec *EventCreate) createSpec() (*Event, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.creator_uuid = &nodes[0]
+		_node.CreatorUUID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

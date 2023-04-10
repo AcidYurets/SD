@@ -9,6 +9,7 @@ import (
 	"calend/internal/modules/db/ent/invitation"
 	"calend/internal/modules/db/ent/user"
 	"context"
+	"errors"
 	"fmt"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -20,6 +21,24 @@ type InvitationCreate struct {
 	config
 	mutation *InvitationMutation
 	hooks    []Hook
+}
+
+// SetUserUUID sets the "user_uuid" field.
+func (ic *InvitationCreate) SetUserUUID(s string) *InvitationCreate {
+	ic.mutation.SetUserUUID(s)
+	return ic
+}
+
+// SetEventUUID sets the "event_uuid" field.
+func (ic *InvitationCreate) SetEventUUID(s string) *InvitationCreate {
+	ic.mutation.SetEventUUID(s)
+	return ic
+}
+
+// SetAccessRightCode sets the "access_right_code" field.
+func (ic *InvitationCreate) SetAccessRightCode(a access.Type) *InvitationCreate {
+	ic.mutation.SetAccessRightCode(a)
+	return ic
 }
 
 // SetID sets the "id" field.
@@ -42,14 +61,6 @@ func (ic *InvitationCreate) SetEventID(id string) *InvitationCreate {
 	return ic
 }
 
-// SetNillableEventID sets the "event" edge to the Event entity by ID if the given value is not nil.
-func (ic *InvitationCreate) SetNillableEventID(id *string) *InvitationCreate {
-	if id != nil {
-		ic = ic.SetEventID(*id)
-	}
-	return ic
-}
-
 // SetEvent sets the "event" edge to the Event entity.
 func (ic *InvitationCreate) SetEvent(e *Event) *InvitationCreate {
 	return ic.SetEventID(e.ID)
@@ -61,14 +72,6 @@ func (ic *InvitationCreate) SetUserID(id string) *InvitationCreate {
 	return ic
 }
 
-// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
-func (ic *InvitationCreate) SetNillableUserID(id *string) *InvitationCreate {
-	if id != nil {
-		ic = ic.SetUserID(*id)
-	}
-	return ic
-}
-
 // SetUser sets the "user" edge to the User entity.
 func (ic *InvitationCreate) SetUser(u *User) *InvitationCreate {
 	return ic.SetUserID(u.ID)
@@ -77,14 +80,6 @@ func (ic *InvitationCreate) SetUser(u *User) *InvitationCreate {
 // SetAccessRightID sets the "access_right" edge to the AccessRight entity by ID.
 func (ic *InvitationCreate) SetAccessRightID(id access.Type) *InvitationCreate {
 	ic.mutation.SetAccessRightID(id)
-	return ic
-}
-
-// SetNillableAccessRightID sets the "access_right" edge to the AccessRight entity by ID if the given value is not nil.
-func (ic *InvitationCreate) SetNillableAccessRightID(id *access.Type) *InvitationCreate {
-	if id != nil {
-		ic = ic.SetAccessRightID(*id)
-	}
 	return ic
 }
 
@@ -136,6 +131,24 @@ func (ic *InvitationCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ic *InvitationCreate) check() error {
+	if _, ok := ic.mutation.UserUUID(); !ok {
+		return &ValidationError{Name: "user_uuid", err: errors.New(`ent: missing required field "Invitation.user_uuid"`)}
+	}
+	if _, ok := ic.mutation.EventUUID(); !ok {
+		return &ValidationError{Name: "event_uuid", err: errors.New(`ent: missing required field "Invitation.event_uuid"`)}
+	}
+	if _, ok := ic.mutation.AccessRightCode(); !ok {
+		return &ValidationError{Name: "access_right_code", err: errors.New(`ent: missing required field "Invitation.access_right_code"`)}
+	}
+	if _, ok := ic.mutation.EventID(); !ok {
+		return &ValidationError{Name: "event", err: errors.New(`ent: missing required edge "Invitation.event"`)}
+	}
+	if _, ok := ic.mutation.UserID(); !ok {
+		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Invitation.user"`)}
+	}
+	if _, ok := ic.mutation.AccessRightID(); !ok {
+		return &ValidationError{Name: "access_right", err: errors.New(`ent: missing required edge "Invitation.access_right"`)}
+	}
 	return nil
 }
 
@@ -185,7 +198,7 @@ func (ic *InvitationCreate) createSpec() (*Invitation, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.event_uuid = &nodes[0]
+		_node.EventUUID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := ic.mutation.UserIDs(); len(nodes) > 0 {
@@ -202,7 +215,7 @@ func (ic *InvitationCreate) createSpec() (*Invitation, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.user_uuid = &nodes[0]
+		_node.UserUUID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := ic.mutation.AccessRightIDs(); len(nodes) > 0 {
@@ -219,7 +232,7 @@ func (ic *InvitationCreate) createSpec() (*Invitation, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.access_right_code = &nodes[0]
+		_node.AccessRightCode = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

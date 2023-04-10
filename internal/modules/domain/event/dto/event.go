@@ -2,21 +2,18 @@ package dto
 
 import (
 	"calend/internal/models/access"
-	tag_dto "calend/internal/modules/domain/tag/dto"
-	user_dto "calend/internal/modules/domain/user/dto"
 	"time"
 )
 
 type Event struct {
-	Uuid        string         // Uuid события
-	Timestamp   time.Time      // Временная метка
-	Name        string         // Название
-	Description *string        // Описание
-	Type        string         // Тип события
-	IsWholeDay  bool           // Событие на целый день?
-	Invitations Invitations    // Приглашения события
-	Tags        tag_dto.Tags   // Теги события
-	Creator     *user_dto.User // Создатель события
+	Uuid        string      // Uuid события
+	Timestamp   time.Time   // Временная метка
+	Name        string      // Название
+	Description *string     // Описание
+	Type        string      // Тип события
+	IsWholeDay  bool        // Событие на целый день?
+	Invitations Invitations // Приглашения события
+	CreatorUuid string      // Создатель события
 }
 
 type Events []*Event

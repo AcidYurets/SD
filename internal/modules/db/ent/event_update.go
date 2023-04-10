@@ -101,6 +101,12 @@ func (eu *EventUpdate) SetIsWholeDay(b bool) *EventUpdate {
 	return eu
 }
 
+// SetCreatorUUID sets the "creator_uuid" field.
+func (eu *EventUpdate) SetCreatorUUID(s string) *EventUpdate {
+	eu.mutation.SetCreatorUUID(s)
+	return eu
+}
+
 // AddTagIDs adds the "tags" edge to the Tag entity by IDs.
 func (eu *EventUpdate) AddTagIDs(ids ...string) *EventUpdate {
 	eu.mutation.AddTagIDs(ids...)
@@ -134,14 +140,6 @@ func (eu *EventUpdate) AddInvitations(i ...*Invitation) *EventUpdate {
 // SetCreatorID sets the "creator" edge to the User entity by ID.
 func (eu *EventUpdate) SetCreatorID(id string) *EventUpdate {
 	eu.mutation.SetCreatorID(id)
-	return eu
-}
-
-// SetNillableCreatorID sets the "creator" edge to the User entity by ID if the given value is not nil.
-func (eu *EventUpdate) SetNillableCreatorID(id *string) *EventUpdate {
-	if id != nil {
-		eu = eu.SetCreatorID(*id)
-	}
 	return eu
 }
 
@@ -245,7 +243,18 @@ func (eu *EventUpdate) defaults() error {
 	return nil
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (eu *EventUpdate) check() error {
+	if _, ok := eu.mutation.CreatorID(); eu.mutation.CreatorCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Event.creator"`)
+	}
+	return nil
+}
+
 func (eu *EventUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := eu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(event.Table, event.Columns, sqlgraph.NewFieldSpec(event.FieldID, field.TypeString))
 	if ps := eu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -490,6 +499,12 @@ func (euo *EventUpdateOne) SetIsWholeDay(b bool) *EventUpdateOne {
 	return euo
 }
 
+// SetCreatorUUID sets the "creator_uuid" field.
+func (euo *EventUpdateOne) SetCreatorUUID(s string) *EventUpdateOne {
+	euo.mutation.SetCreatorUUID(s)
+	return euo
+}
+
 // AddTagIDs adds the "tags" edge to the Tag entity by IDs.
 func (euo *EventUpdateOne) AddTagIDs(ids ...string) *EventUpdateOne {
 	euo.mutation.AddTagIDs(ids...)
@@ -523,14 +538,6 @@ func (euo *EventUpdateOne) AddInvitations(i ...*Invitation) *EventUpdateOne {
 // SetCreatorID sets the "creator" edge to the User entity by ID.
 func (euo *EventUpdateOne) SetCreatorID(id string) *EventUpdateOne {
 	euo.mutation.SetCreatorID(id)
-	return euo
-}
-
-// SetNillableCreatorID sets the "creator" edge to the User entity by ID if the given value is not nil.
-func (euo *EventUpdateOne) SetNillableCreatorID(id *string) *EventUpdateOne {
-	if id != nil {
-		euo = euo.SetCreatorID(*id)
-	}
 	return euo
 }
 
@@ -647,7 +654,18 @@ func (euo *EventUpdateOne) defaults() error {
 	return nil
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (euo *EventUpdateOne) check() error {
+	if _, ok := euo.mutation.CreatorID(); euo.mutation.CreatorCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Event.creator"`)
+	}
+	return nil
+}
+
 func (euo *EventUpdateOne) sqlSave(ctx context.Context) (_node *Event, err error) {
+	if err := euo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(event.Table, event.Columns, sqlgraph.NewFieldSpec(event.FieldID, field.TypeString))
 	id, ok := euo.mutation.ID()
 	if !ok {

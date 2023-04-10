@@ -2,7 +2,6 @@ package integrational
 
 import (
 	"calend/internal/modules/db/ent"
-	"calend/internal/modules/db/schema"
 	auth_dto "calend/internal/modules/domain/auth/dto"
 	auth_serv "calend/internal/modules/domain/auth/service"
 	"calend/internal/modules/domain/tag/dto"
@@ -13,19 +12,11 @@ import (
 )
 
 func tagServiceTest(t *testing.T, service *service.TagService, authService *auth_serv.AuthService, client *ent.Client) {
-	_, err := client.Tag.Delete().Exec(schema.SkipSoftDelete(context.Background()))
+	err := truncateAll(client)
 	assert.NoError(t, err)
-	// Если не получилось - дальше продолжать смысла нет
 	if err != nil {
 		return
 	}
-	_, err = client.User.Delete().Exec(schema.SkipSoftDelete(context.Background()))
-	assert.NoError(t, err)
-	// Если не получилось - дальше продолжать смысла нет
-	if err != nil {
-		return
-	}
-
 	// Регистрируем пользователя
 	newUser := &auth_dto.NewUser{
 		Login:    "yurets",

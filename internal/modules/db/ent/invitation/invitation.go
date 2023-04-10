@@ -7,6 +7,12 @@ const (
 	Label = "invitation"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "uuid"
+	// FieldUserUUID holds the string denoting the user_uuid field in the database.
+	FieldUserUUID = "user_uuid"
+	// FieldEventUUID holds the string denoting the event_uuid field in the database.
+	FieldEventUUID = "event_uuid"
+	// FieldAccessRightCode holds the string denoting the access_right_code field in the database.
+	FieldAccessRightCode = "access_right_code"
 	// EdgeEvent holds the string denoting the event edge name in mutations.
 	EdgeEvent = "event"
 	// EdgeUser holds the string denoting the user edge name in mutations.
@@ -43,25 +49,15 @@ const (
 // Columns holds all SQL columns for invitation fields.
 var Columns = []string{
 	FieldID,
-}
-
-// ForeignKeys holds the SQL foreign-keys that are owned by the "invitations"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"access_right_code",
-	"event_uuid",
-	"user_uuid",
+	FieldUserUUID,
+	FieldEventUUID,
+	FieldAccessRightCode,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}

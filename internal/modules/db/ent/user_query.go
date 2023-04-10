@@ -456,7 +456,6 @@ func (uq *UserQuery) loadInvitations(ctx context.Context, query *InvitationQuery
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
 	query.Where(predicate.Invitation(func(s *sql.Selector) {
 		s.Where(sql.InValues(user.InvitationsColumn, fks...))
 	}))
@@ -465,13 +464,10 @@ func (uq *UserQuery) loadInvitations(ctx context.Context, query *InvitationQuery
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.user_uuid
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "user_uuid" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.UserUUID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_uuid" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "user_uuid" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -487,7 +483,6 @@ func (uq *UserQuery) loadCreatedEvents(ctx context.Context, query *EventQuery, n
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
 	query.Where(predicate.Event(func(s *sql.Selector) {
 		s.Where(sql.InValues(user.CreatedEventsColumn, fks...))
 	}))
@@ -496,13 +491,10 @@ func (uq *UserQuery) loadCreatedEvents(ctx context.Context, query *EventQuery, n
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.creator_uuid
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "creator_uuid" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.CreatorUUID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "creator_uuid" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "creator_uuid" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

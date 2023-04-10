@@ -2,7 +2,6 @@ package integrational
 
 import (
 	"calend/internal/modules/db/ent"
-	"calend/internal/modules/db/schema"
 	auth_dto "calend/internal/modules/domain/auth/dto"
 	auth_serv "calend/internal/modules/domain/auth/service"
 	"calend/internal/modules/domain/event/dto"
@@ -17,38 +16,14 @@ import (
 )
 
 func eventServiceTest(t *testing.T, service *event_serv.EventService, tagService *tag_serv.TagService, authService *auth_serv.AuthService, client *ent.Client) {
-	_, err := client.Event.Delete().Exec(schema.SkipSoftDelete(context.Background()))
+	err := truncateAll(client)
 	assert.NoError(t, err)
-	// Если не получилось - дальше продолжать смысла нет
 	if err != nil {
 		return
 	}
-	_, err = client.Invitation.Delete().Exec(schema.SkipSoftDelete(context.Background()))
+
+	err = createAccessRight(client)
 	assert.NoError(t, err)
-	// Если не получилось - дальше продолжать смысла нет
-	if err != nil {
-		return
-	}
-	_, err = client.Tag.Delete().Exec(schema.SkipSoftDelete(context.Background()))
-	assert.NoError(t, err)
-	// Если не получилось - дальше продолжать смысла нет
-	if err != nil {
-		return
-	}
-	_, err = client.AccessRight.Delete().Exec(schema.SkipSoftDelete(context.Background()))
-	assert.NoError(t, err)
-	// Если не получилось - дальше продолжать смысла нет
-	if err != nil {
-		return
-	}
-	_, err = client.AccessRight.Create().SetID("r").SetDescription("Право на просмотр").Save(context.Background())
-	_, err = client.AccessRight.Create().SetID("ri").SetDescription("Право на просмотр и приглашение").Save(context.Background())
-	_, err = client.AccessRight.Create().SetID("riu").SetDescription("Право на просмотр, приглашение и изменение").Save(context.Background())
-	_, err = client.AccessRight.Create().SetID("riud").SetDescription("Право на просмотр, приглашение, изменение и удаление").Save(context.Background())
-	assert.NoError(t, err)
-	_, err = client.User.Delete().Exec(schema.SkipSoftDelete(context.Background()))
-	assert.NoError(t, err)
-	// Если не получилось - дальше продолжать смысла нет
 	if err != nil {
 		return
 	}
@@ -135,11 +110,9 @@ func eventServiceTest(t *testing.T, service *event_serv.EventService, tagService
 	assert.Equal(t, event, es2[0])
 
 	// Меняем имя и тег, добавляем приглашение
-	event.Name += "1"
-	event.Tags = tag_dto.Tags{tag2}
 	updEvent := &dto.UpdateEvent{
 		Timestamp:   event.Timestamp,
-		Name:        event.Name,
+		Name:        event.Name + "1",
 		Description: event.Description,
 		Type:        event.Type,
 		IsWholeDay:  event.IsWholeDay,
@@ -160,6 +133,11 @@ func eventServiceTest(t *testing.T, service *event_serv.EventService, tagService
 	event, err = service.Update(ctx1, event.Uuid, updEvent, updInvs)
 	assert.NoError(t, err)
 
+	// Проверяем корректность нового тега
+	tags, err := service.ListTagsByEventUuid(ctx1, event.Uuid)
+	assert.NoError(t, err)
+	assert.Equal(t, tags[0], tag2)
+
 	// Пробуем изменить событие 2ым пользователем
 	_, err = service.Update(ctx2, event.Uuid, updEvent, updInvs)
 	assert.Error(t, err)
@@ -167,4 +145,45 @@ func eventServiceTest(t *testing.T, service *event_serv.EventService, tagService
 	// Изменяем событие 3им пользователем
 	_, err = service.Update(ctx3, event.Uuid, updEvent, updInvs)
 	assert.NoError(t, err)
+
+	// Пробуем удалить событие 3им пользователем
+	err = service.Delete(ctx3, event.Uuid)
+	assert.Error(t, err)
+
+	// Удаляем событие 1ым пользователем
+	err = service.Delete(ctx1, event.Uuid)
+	assert.NoError(t, err)
+
+	// Заново создаем событие с 1 приглашением
+	event, err = service.CreateWithInvitations(ctx1, newEvent, newInvs)
+	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
+
+	addInvs1 := dto.CreateEventInvitations{
+		&dto.CreateEventInvitation{
+			UserUuid:        currentUser3.Uuid,
+			AccessRightCode: "ri",
+		},
+	}
+
+	addInvs2 := dto.CreateEventInvitations{
+		&dto.CreateEventInvitation{
+			UserUuid:        currentUser3.Uuid,
+			AccessRightCode: "riud",
+		},
+	}
+
+	// Пробуем добавить приглашение 2ым пользователем
+	_, err = service.AddInvitations(ctx2, event.Uuid, addInvs1)
+	assert.Error(t, err)
+
+	// Добавляем приглашение 1ым пользователем
+	_, err = service.AddInvitations(ctx1, event.Uuid, addInvs1)
+	assert.NoError(t, err)
+
+	// Пробуем добавить уже существующее приглашение 3им пользователем
+	_, err = service.AddInvitations(ctx3, event.Uuid, addInvs2)
+	assert.Error(t, err)
 }

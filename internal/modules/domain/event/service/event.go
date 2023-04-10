@@ -5,6 +5,7 @@ import (
 	"calend/internal/models/err_const"
 	"calend/internal/models/session"
 	"calend/internal/modules/domain/event/dto"
+	tag_dto "calend/internal/modules/domain/tag/dto"
 	"context"
 	"fmt"
 	"strings"
@@ -16,6 +17,8 @@ import (
 type IEventRepo interface {
 	// GetByUuid получение по uuid события вместе со связанными сущностями
 	GetByUuid(ctx context.Context, uuid string) (*dto.Event, error)
+	// ListTagsByEventUuid получение тегов по uuid события
+	ListTagsByEventUuid(ctx context.Context, uuid string) (tag_dto.Tags, error)
 	// GetCheckingInfoByUuid получение по uuid события только необходимыми для проверки прав доступа полями
 	GetCheckingInfoByUuid(ctx context.Context, uuid string) (*dto.Event, error)
 	// ListAvailable ищет все доступные пользователю события вместе со связанными сущностями, т.е.
@@ -55,6 +58,14 @@ func (r *EventService) GetByUuid(ctx context.Context, uuid string) (*dto.Event, 
 	}
 
 	return r.eventRepo.GetByUuid(ctx, uuid)
+}
+
+func (r *EventService) ListTagsByEventUuid(ctx context.Context, uuid string) (tag_dto.Tags, error) {
+	if err := r.checkAvailable(ctx, uuid, access.ReadAccess); err != nil {
+		return nil, err
+	}
+
+	return r.eventRepo.ListTagsByEventUuid(ctx, uuid)
 }
 
 // ListAvailable ищет все доступные пользователю события, т.е.
@@ -207,26 +218,25 @@ func (r *EventService) checkAvailable(ctx context.Context, eventUuid string, opC
 	}
 
 	// Проверяем, присутствуют ли в событии необходимые поля о создателе
-	if event == nil || event.Creator == nil || event.Creator.Uuid == "" {
+	if event.CreatorUuid == "" {
 		return err_const.ErrMissingRequiredFields
 	}
 
 	// Если текущий пользователь -- создатель, то у него полный доступ
-	if event.Creator.Uuid == userUuid {
+	if event.CreatorUuid == userUuid {
 		return nil
 	}
 
 	for _, inv := range event.Invitations {
 		// Проверяем, присутствуют ли в приглашении необходимые поля о пользователе и праве доступа
-		if inv == nil || inv.User == nil || inv.User.Uuid == "" ||
-			inv.AccessRight == nil || inv.AccessRight.Code == "" {
+		if inv == nil || inv.UserUuid == "" || inv.AccessRightCode == "" {
 			return err_const.ErrMissingRequiredFields
 		}
 
 		// Если пользователь приглашен к событию, то проверяем его права доступа
-		if inv.User.Uuid == userUuid {
+		if inv.UserUuid == userUuid {
 			// Если есть необходимое право
-			if strings.Contains(inv.AccessRight.Code.String(), string(opCode)) {
+			if strings.Contains(inv.AccessRightCode.String(), string(opCode)) {
 				return nil
 			}
 		}

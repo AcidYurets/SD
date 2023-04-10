@@ -105,6 +105,11 @@ func IsWholeDay(v bool) predicate.Event {
 	return predicate.Event(sql.FieldEQ(FieldIsWholeDay, v))
 }
 
+// CreatorUUID applies equality check predicate on the "creator_uuid" field. It's identical to CreatorUUIDEQ.
+func CreatorUUID(v string) predicate.Event {
+	return predicate.Event(sql.FieldEQ(FieldCreatorUUID, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Event {
 	return predicate.Event(sql.FieldEQ(FieldCreatedAt, v))
@@ -488,6 +493,71 @@ func IsWholeDayEQ(v bool) predicate.Event {
 // IsWholeDayNEQ applies the NEQ predicate on the "is_whole_day" field.
 func IsWholeDayNEQ(v bool) predicate.Event {
 	return predicate.Event(sql.FieldNEQ(FieldIsWholeDay, v))
+}
+
+// CreatorUUIDEQ applies the EQ predicate on the "creator_uuid" field.
+func CreatorUUIDEQ(v string) predicate.Event {
+	return predicate.Event(sql.FieldEQ(FieldCreatorUUID, v))
+}
+
+// CreatorUUIDNEQ applies the NEQ predicate on the "creator_uuid" field.
+func CreatorUUIDNEQ(v string) predicate.Event {
+	return predicate.Event(sql.FieldNEQ(FieldCreatorUUID, v))
+}
+
+// CreatorUUIDIn applies the In predicate on the "creator_uuid" field.
+func CreatorUUIDIn(vs ...string) predicate.Event {
+	return predicate.Event(sql.FieldIn(FieldCreatorUUID, vs...))
+}
+
+// CreatorUUIDNotIn applies the NotIn predicate on the "creator_uuid" field.
+func CreatorUUIDNotIn(vs ...string) predicate.Event {
+	return predicate.Event(sql.FieldNotIn(FieldCreatorUUID, vs...))
+}
+
+// CreatorUUIDGT applies the GT predicate on the "creator_uuid" field.
+func CreatorUUIDGT(v string) predicate.Event {
+	return predicate.Event(sql.FieldGT(FieldCreatorUUID, v))
+}
+
+// CreatorUUIDGTE applies the GTE predicate on the "creator_uuid" field.
+func CreatorUUIDGTE(v string) predicate.Event {
+	return predicate.Event(sql.FieldGTE(FieldCreatorUUID, v))
+}
+
+// CreatorUUIDLT applies the LT predicate on the "creator_uuid" field.
+func CreatorUUIDLT(v string) predicate.Event {
+	return predicate.Event(sql.FieldLT(FieldCreatorUUID, v))
+}
+
+// CreatorUUIDLTE applies the LTE predicate on the "creator_uuid" field.
+func CreatorUUIDLTE(v string) predicate.Event {
+	return predicate.Event(sql.FieldLTE(FieldCreatorUUID, v))
+}
+
+// CreatorUUIDContains applies the Contains predicate on the "creator_uuid" field.
+func CreatorUUIDContains(v string) predicate.Event {
+	return predicate.Event(sql.FieldContains(FieldCreatorUUID, v))
+}
+
+// CreatorUUIDHasPrefix applies the HasPrefix predicate on the "creator_uuid" field.
+func CreatorUUIDHasPrefix(v string) predicate.Event {
+	return predicate.Event(sql.FieldHasPrefix(FieldCreatorUUID, v))
+}
+
+// CreatorUUIDHasSuffix applies the HasSuffix predicate on the "creator_uuid" field.
+func CreatorUUIDHasSuffix(v string) predicate.Event {
+	return predicate.Event(sql.FieldHasSuffix(FieldCreatorUUID, v))
+}
+
+// CreatorUUIDEqualFold applies the EqualFold predicate on the "creator_uuid" field.
+func CreatorUUIDEqualFold(v string) predicate.Event {
+	return predicate.Event(sql.FieldEqualFold(FieldCreatorUUID, v))
+}
+
+// CreatorUUIDContainsFold applies the ContainsFold predicate on the "creator_uuid" field.
+func CreatorUUIDContainsFold(v string) predicate.Event {
+	return predicate.Event(sql.FieldContainsFold(FieldCreatorUUID, v))
 }
 
 // HasTags applies the HasEdge predicate on the "tags" edge.

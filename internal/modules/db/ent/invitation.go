@@ -16,15 +16,18 @@ import (
 
 // Invitation is the model entity for the Invitation schema.
 type Invitation struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
+	// UserUUID holds the value of the "user_uuid" field.
+	UserUUID string `json:"user_uuid,omitempty"`
+	// EventUUID holds the value of the "event_uuid" field.
+	EventUUID string `json:"event_uuid,omitempty"`
+	// AccessRightCode holds the value of the "access_right_code" field.
+	AccessRightCode access.Type `json:"access_right_code,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the InvitationQuery when eager-loading is set.
-	Edges             InvitationEdges `json:"edges"`
-	access_right_code *access.Type
-	event_uuid        *string
-	user_uuid         *string
+	Edges InvitationEdges `json:"edges"`
 }
 
 // InvitationEdges holds the relations/edges for other nodes in the graph.
@@ -84,13 +87,7 @@ func (*Invitation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case invitation.FieldID:
-			values[i] = new(sql.NullString)
-		case invitation.ForeignKeys[0]: // access_right_code
-			values[i] = new(sql.NullString)
-		case invitation.ForeignKeys[1]: // event_uuid
-			values[i] = new(sql.NullString)
-		case invitation.ForeignKeys[2]: // user_uuid
+		case invitation.FieldID, invitation.FieldUserUUID, invitation.FieldEventUUID, invitation.FieldAccessRightCode:
 			values[i] = new(sql.NullString)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Invitation", columns[i])
@@ -113,26 +110,23 @@ func (i *Invitation) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				i.ID = value.String
 			}
-		case invitation.ForeignKeys[0]:
-			if value, ok := values[j].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field access_right_code", values[j])
-			} else if value.Valid {
-				i.access_right_code = new(access.Type)
-				*i.access_right_code = access.Type(value.String)
-			}
-		case invitation.ForeignKeys[1]:
-			if value, ok := values[j].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field event_uuid", values[j])
-			} else if value.Valid {
-				i.event_uuid = new(string)
-				*i.event_uuid = value.String
-			}
-		case invitation.ForeignKeys[2]:
+		case invitation.FieldUserUUID:
 			if value, ok := values[j].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field user_uuid", values[j])
 			} else if value.Valid {
-				i.user_uuid = new(string)
-				*i.user_uuid = value.String
+				i.UserUUID = value.String
+			}
+		case invitation.FieldEventUUID:
+			if value, ok := values[j].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field event_uuid", values[j])
+			} else if value.Valid {
+				i.EventUUID = value.String
+			}
+		case invitation.FieldAccessRightCode:
+			if value, ok := values[j].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field access_right_code", values[j])
+			} else if value.Valid {
+				i.AccessRightCode = access.Type(value.String)
 			}
 		}
 	}
@@ -176,7 +170,15 @@ func (i *Invitation) Unwrap() *Invitation {
 func (i *Invitation) String() string {
 	var builder strings.Builder
 	builder.WriteString("Invitation(")
-	builder.WriteString(fmt.Sprintf("id=%v", i.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", i.ID))
+	builder.WriteString("user_uuid=")
+	builder.WriteString(i.UserUUID)
+	builder.WriteString(", ")
+	builder.WriteString("event_uuid=")
+	builder.WriteString(i.EventUUID)
+	builder.WriteString(", ")
+	builder.WriteString("access_right_code=")
+	builder.WriteString(fmt.Sprintf("%v", i.AccessRightCode))
 	builder.WriteByte(')')
 	return builder.String()
 }

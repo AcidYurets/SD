@@ -33,10 +33,11 @@ type Event struct {
 	Type string `json:"type,omitempty"`
 	// IsWholeDay holds the value of the "is_whole_day" field.
 	IsWholeDay bool `json:"is_whole_day,omitempty"`
+	// CreatorUUID holds the value of the "creator_uuid" field.
+	CreatorUUID string `json:"creator_uuid,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the EventQuery when eager-loading is set.
-	Edges        EventEdges `json:"edges"`
-	creator_uuid *string
+	Edges EventEdges `json:"edges"`
 }
 
 // EventEdges holds the relations/edges for other nodes in the graph.
@@ -90,12 +91,10 @@ func (*Event) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case event.FieldIsWholeDay:
 			values[i] = new(sql.NullBool)
-		case event.FieldID, event.FieldName, event.FieldDescription, event.FieldType:
+		case event.FieldID, event.FieldName, event.FieldDescription, event.FieldType, event.FieldCreatorUUID:
 			values[i] = new(sql.NullString)
 		case event.FieldCreatedAt, event.FieldUpdatedAt, event.FieldDeletedAt, event.FieldTimestamp:
 			values[i] = new(sql.NullTime)
-		case event.ForeignKeys[0]: // creator_uuid
-			values[i] = new(sql.NullString)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Event", columns[i])
 		}
@@ -166,12 +165,11 @@ func (e *Event) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				e.IsWholeDay = value.Bool
 			}
-		case event.ForeignKeys[0]:
+		case event.FieldCreatorUUID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field creator_uuid", values[i])
 			} else if value.Valid {
-				e.creator_uuid = new(string)
-				*e.creator_uuid = value.String
+				e.CreatorUUID = value.String
 			}
 		}
 	}
@@ -241,6 +239,9 @@ func (e *Event) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("is_whole_day=")
 	builder.WriteString(fmt.Sprintf("%v", e.IsWholeDay))
+	builder.WriteString(", ")
+	builder.WriteString("creator_uuid=")
+	builder.WriteString(e.CreatorUUID)
 	builder.WriteByte(')')
 	return builder.String()
 }

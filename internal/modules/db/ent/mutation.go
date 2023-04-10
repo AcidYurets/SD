@@ -907,6 +907,42 @@ func (m *EventMutation) ResetIsWholeDay() {
 	m.is_whole_day = nil
 }
 
+// SetCreatorUUID sets the "creator_uuid" field.
+func (m *EventMutation) SetCreatorUUID(s string) {
+	m.creator = &s
+}
+
+// CreatorUUID returns the value of the "creator_uuid" field in the mutation.
+func (m *EventMutation) CreatorUUID() (r string, exists bool) {
+	v := m.creator
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatorUUID returns the old "creator_uuid" field's value of the Event entity.
+// If the Event object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EventMutation) OldCreatorUUID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatorUUID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatorUUID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatorUUID: %w", err)
+	}
+	return oldValue.CreatorUUID, nil
+}
+
+// ResetCreatorUUID resets all changes to the "creator_uuid" field.
+func (m *EventMutation) ResetCreatorUUID() {
+	m.creator = nil
+}
+
 // AddTagIDs adds the "tags" edge to the Tag entity by ids.
 func (m *EventMutation) AddTagIDs(ids ...string) {
 	if m.tags == nil {
@@ -1088,7 +1124,7 @@ func (m *EventMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EventMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.created_at != nil {
 		fields = append(fields, event.FieldCreatedAt)
 	}
@@ -1112,6 +1148,9 @@ func (m *EventMutation) Fields() []string {
 	}
 	if m.is_whole_day != nil {
 		fields = append(fields, event.FieldIsWholeDay)
+	}
+	if m.creator != nil {
+		fields = append(fields, event.FieldCreatorUUID)
 	}
 	return fields
 }
@@ -1137,6 +1176,8 @@ func (m *EventMutation) Field(name string) (ent.Value, bool) {
 		return m.GetType()
 	case event.FieldIsWholeDay:
 		return m.IsWholeDay()
+	case event.FieldCreatorUUID:
+		return m.CreatorUUID()
 	}
 	return nil, false
 }
@@ -1162,6 +1203,8 @@ func (m *EventMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldType(ctx)
 	case event.FieldIsWholeDay:
 		return m.OldIsWholeDay(ctx)
+	case event.FieldCreatorUUID:
+		return m.OldCreatorUUID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Event field %s", name)
 }
@@ -1226,6 +1269,13 @@ func (m *EventMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetIsWholeDay(v)
+		return nil
+	case event.FieldCreatorUUID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatorUUID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Event field %s", name)
@@ -1314,6 +1364,9 @@ func (m *EventMutation) ResetField(name string) error {
 		return nil
 	case event.FieldIsWholeDay:
 		m.ResetIsWholeDay()
+		return nil
+	case event.FieldCreatorUUID:
+		m.ResetCreatorUUID()
 		return nil
 	}
 	return fmt.Errorf("unknown Event field %s", name)
@@ -1569,6 +1622,114 @@ func (m *InvitationMutation) IDs(ctx context.Context) ([]string, error) {
 	}
 }
 
+// SetUserUUID sets the "user_uuid" field.
+func (m *InvitationMutation) SetUserUUID(s string) {
+	m.user = &s
+}
+
+// UserUUID returns the value of the "user_uuid" field in the mutation.
+func (m *InvitationMutation) UserUUID() (r string, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserUUID returns the old "user_uuid" field's value of the Invitation entity.
+// If the Invitation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *InvitationMutation) OldUserUUID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserUUID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserUUID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserUUID: %w", err)
+	}
+	return oldValue.UserUUID, nil
+}
+
+// ResetUserUUID resets all changes to the "user_uuid" field.
+func (m *InvitationMutation) ResetUserUUID() {
+	m.user = nil
+}
+
+// SetEventUUID sets the "event_uuid" field.
+func (m *InvitationMutation) SetEventUUID(s string) {
+	m.event = &s
+}
+
+// EventUUID returns the value of the "event_uuid" field in the mutation.
+func (m *InvitationMutation) EventUUID() (r string, exists bool) {
+	v := m.event
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventUUID returns the old "event_uuid" field's value of the Invitation entity.
+// If the Invitation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *InvitationMutation) OldEventUUID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventUUID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventUUID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventUUID: %w", err)
+	}
+	return oldValue.EventUUID, nil
+}
+
+// ResetEventUUID resets all changes to the "event_uuid" field.
+func (m *InvitationMutation) ResetEventUUID() {
+	m.event = nil
+}
+
+// SetAccessRightCode sets the "access_right_code" field.
+func (m *InvitationMutation) SetAccessRightCode(a access.Type) {
+	m.access_right = &a
+}
+
+// AccessRightCode returns the value of the "access_right_code" field in the mutation.
+func (m *InvitationMutation) AccessRightCode() (r access.Type, exists bool) {
+	v := m.access_right
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAccessRightCode returns the old "access_right_code" field's value of the Invitation entity.
+// If the Invitation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *InvitationMutation) OldAccessRightCode(ctx context.Context) (v access.Type, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAccessRightCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAccessRightCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAccessRightCode: %w", err)
+	}
+	return oldValue.AccessRightCode, nil
+}
+
+// ResetAccessRightCode resets all changes to the "access_right_code" field.
+func (m *InvitationMutation) ResetAccessRightCode() {
+	m.access_right = nil
+}
+
 // SetEventID sets the "event" edge to the Event entity by id.
 func (m *InvitationMutation) SetEventID(id string) {
 	m.event = &id
@@ -1720,7 +1881,16 @@ func (m *InvitationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *InvitationMutation) Fields() []string {
-	fields := make([]string, 0, 0)
+	fields := make([]string, 0, 3)
+	if m.user != nil {
+		fields = append(fields, invitation.FieldUserUUID)
+	}
+	if m.event != nil {
+		fields = append(fields, invitation.FieldEventUUID)
+	}
+	if m.access_right != nil {
+		fields = append(fields, invitation.FieldAccessRightCode)
+	}
 	return fields
 }
 
@@ -1728,6 +1898,14 @@ func (m *InvitationMutation) Fields() []string {
 // return value indicates that this field was not set, or was not defined in the
 // schema.
 func (m *InvitationMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case invitation.FieldUserUUID:
+		return m.UserUUID()
+	case invitation.FieldEventUUID:
+		return m.EventUUID()
+	case invitation.FieldAccessRightCode:
+		return m.AccessRightCode()
+	}
 	return nil, false
 }
 
@@ -1735,6 +1913,14 @@ func (m *InvitationMutation) Field(name string) (ent.Value, bool) {
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
 func (m *InvitationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case invitation.FieldUserUUID:
+		return m.OldUserUUID(ctx)
+	case invitation.FieldEventUUID:
+		return m.OldEventUUID(ctx)
+	case invitation.FieldAccessRightCode:
+		return m.OldAccessRightCode(ctx)
+	}
 	return nil, fmt.Errorf("unknown Invitation field %s", name)
 }
 
@@ -1743,6 +1929,27 @@ func (m *InvitationMutation) OldField(ctx context.Context, name string) (ent.Val
 // type.
 func (m *InvitationMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case invitation.FieldUserUUID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserUUID(v)
+		return nil
+	case invitation.FieldEventUUID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventUUID(v)
+		return nil
+	case invitation.FieldAccessRightCode:
+		v, ok := value.(access.Type)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccessRightCode(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Invitation field %s", name)
 }
@@ -1764,6 +1971,8 @@ func (m *InvitationMutation) AddedField(name string) (ent.Value, bool) {
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
 func (m *InvitationMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Invitation numeric field %s", name)
 }
 
@@ -1789,6 +1998,17 @@ func (m *InvitationMutation) ClearField(name string) error {
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
 func (m *InvitationMutation) ResetField(name string) error {
+	switch name {
+	case invitation.FieldUserUUID:
+		m.ResetUserUUID()
+		return nil
+	case invitation.FieldEventUUID:
+		m.ResetEventUUID()
+		return nil
+	case invitation.FieldAccessRightCode:
+		m.ResetAccessRightCode()
+		return nil
+	}
 	return fmt.Errorf("unknown Invitation field %s", name)
 }
 

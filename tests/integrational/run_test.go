@@ -39,10 +39,10 @@ func execTests(
 		OnStart: func(ctx context.Context) error {
 			go func() {
 				eventServiceTest(t, eventService, tagService, authService, client)
-				//authServiceTest(t, userService, authService, client)
-				//userServiceTest(t, userService, authService, client)
-				//tagServiceTest(t, tagService, authService, client)
-				//accessRightServiceTest(t, arService, authService, client)
+				authServiceTest(t, userService, authService, client)
+				userServiceTest(t, userService, authService, client)
+				tagServiceTest(t, tagService, authService, client)
+				accessRightServiceTest(t, arService, authService, client)
 
 				_ = shutdowner.Shutdown()
 			}()

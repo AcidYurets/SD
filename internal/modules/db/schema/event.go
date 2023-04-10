@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
@@ -25,6 +26,9 @@ func (Event) Fields() []ent.Field {
 		field.String("description").Optional().Nillable(),
 		field.String("type"),
 		field.Bool("is_whole_day"),
+		field.String("creator_uuid").SchemaType(map[string]string{
+			dialect.Postgres: "uuid",
+		}),
 	}
 }
 
@@ -34,11 +38,11 @@ func (Event) Edges() []ent.Edge {
 		edge.To("tags", Tag.Type).StorageKey(
 			edge.Table("events_tags"), edge.Columns("event_uuid", "tag_uuid"),
 		),
-		edge.To("invitations", Invitation.Type).StorageKey(
-			edge.Column("event_uuid"),
-		),
+		edge.To("invitations", Invitation.Type),
 		edge.From("creator", User.Type).
 			Ref("created_events").
-			Unique(),
+			Field("creator_uuid").
+			Unique().
+			Required(),
 	}
 }

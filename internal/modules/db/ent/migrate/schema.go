@@ -30,7 +30,7 @@ var (
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "type", Type: field.TypeString},
 		{Name: "is_whole_day", Type: field.TypeBool},
-		{Name: "creator_uuid", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "uuid"}},
+		{Name: "creator_uuid", Type: field.TypeString, SchemaType: map[string]string{"postgres": "uuid"}},
 	}
 	// EventsTable holds the schema information for the "events" table.
 	EventsTable = &schema.Table{
@@ -42,16 +42,16 @@ var (
 				Symbol:     "events_users_created_events",
 				Columns:    []*schema.Column{EventsColumns[9]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.NoAction,
 			},
 		},
 	}
 	// InvitationsColumns holds the columns for the "invitations" table.
 	InvitationsColumns = []*schema.Column{
 		{Name: "uuid", Type: field.TypeString, Default: schema.Expr("uuid_generate_v4()"), SchemaType: map[string]string{"postgres": "uuid"}},
-		{Name: "access_right_code", Type: field.TypeString, Nullable: true},
-		{Name: "event_uuid", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "uuid"}},
-		{Name: "user_uuid", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "uuid"}},
+		{Name: "access_right_code", Type: field.TypeString},
+		{Name: "event_uuid", Type: field.TypeString, SchemaType: map[string]string{"postgres": "uuid"}},
+		{Name: "user_uuid", Type: field.TypeString, SchemaType: map[string]string{"postgres": "uuid"}},
 	}
 	// InvitationsTable holds the schema information for the "invitations" table.
 	InvitationsTable = &schema.Table{
@@ -63,19 +63,26 @@ var (
 				Symbol:     "invitations_access_rights_invitations",
 				Columns:    []*schema.Column{InvitationsColumns[1]},
 				RefColumns: []*schema.Column{AccessRightsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "invitations_events_invitations",
 				Columns:    []*schema.Column{InvitationsColumns[2]},
 				RefColumns: []*schema.Column{EventsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "invitations_users_invitations",
 				Columns:    []*schema.Column{InvitationsColumns[3]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "invitation_event_uuid_user_uuid",
+				Unique:  true,
+				Columns: []*schema.Column{InvitationsColumns[2], InvitationsColumns[3]},
 			},
 		},
 	}

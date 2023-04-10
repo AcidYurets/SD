@@ -28,7 +28,6 @@ type InvitationQuery struct {
 	withEvent       *EventQuery
 	withUser        *UserQuery
 	withAccessRight *AccessRightQuery
-	withFKs         bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -367,6 +366,18 @@ func (iq *InvitationQuery) WithAccessRight(opts ...func(*AccessRightQuery)) *Inv
 
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
+//
+// Example:
+//
+//	var v []struct {
+//		UserUUID string `json:"user_uuid,omitempty"`
+//		Count int `json:"count,omitempty"`
+//	}
+//
+//	client.Invitation.Query().
+//		GroupBy(invitation.FieldUserUUID).
+//		Aggregate(ent.Count()).
+//		Scan(ctx, &v)
 func (iq *InvitationQuery) GroupBy(field string, fields ...string) *InvitationGroupBy {
 	iq.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &InvitationGroupBy{build: iq}
@@ -378,6 +389,16 @@ func (iq *InvitationQuery) GroupBy(field string, fields ...string) *InvitationGr
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
+//
+// Example:
+//
+//	var v []struct {
+//		UserUUID string `json:"user_uuid,omitempty"`
+//	}
+//
+//	client.Invitation.Query().
+//		Select(invitation.FieldUserUUID).
+//		Scan(ctx, &v)
 func (iq *InvitationQuery) Select(fields ...string) *InvitationSelect {
 	iq.ctx.Fields = append(iq.ctx.Fields, fields...)
 	sbuild := &InvitationSelect{InvitationQuery: iq}
@@ -420,7 +441,6 @@ func (iq *InvitationQuery) prepareQuery(ctx context.Context) error {
 func (iq *InvitationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Invitation, error) {
 	var (
 		nodes       = []*Invitation{}
-		withFKs     = iq.withFKs
 		_spec       = iq.querySpec()
 		loadedTypes = [3]bool{
 			iq.withEvent != nil,
@@ -428,12 +448,6 @@ func (iq *InvitationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*I
 			iq.withAccessRight != nil,
 		}
 	)
-	if iq.withEvent != nil || iq.withUser != nil || iq.withAccessRight != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, invitation.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Invitation).scanValues(nil, columns)
 	}
@@ -477,10 +491,7 @@ func (iq *InvitationQuery) loadEvent(ctx context.Context, query *EventQuery, nod
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*Invitation)
 	for i := range nodes {
-		if nodes[i].event_uuid == nil {
-			continue
-		}
-		fk := *nodes[i].event_uuid
+		fk := nodes[i].EventUUID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -509,10 +520,7 @@ func (iq *InvitationQuery) loadUser(ctx context.Context, query *UserQuery, nodes
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*Invitation)
 	for i := range nodes {
-		if nodes[i].user_uuid == nil {
-			continue
-		}
-		fk := *nodes[i].user_uuid
+		fk := nodes[i].UserUUID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -541,10 +549,7 @@ func (iq *InvitationQuery) loadAccessRight(ctx context.Context, query *AccessRig
 	ids := make([]access.Type, 0, len(nodes))
 	nodeids := make(map[access.Type][]*Invitation)
 	for i := range nodes {
-		if nodes[i].access_right_code == nil {
-			continue
-		}
-		fk := *nodes[i].access_right_code
+		fk := nodes[i].AccessRightCode
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}

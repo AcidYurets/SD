@@ -28,7 +28,6 @@ type EventQuery struct {
 	withTags        *TagQuery
 	withInvitations *InvitationQuery
 	withCreator     *UserQuery
-	withFKs         bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -442,7 +441,6 @@ func (eq *EventQuery) prepareQuery(ctx context.Context) error {
 func (eq *EventQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Event, error) {
 	var (
 		nodes       = []*Event{}
-		withFKs     = eq.withFKs
 		_spec       = eq.querySpec()
 		loadedTypes = [3]bool{
 			eq.withTags != nil,
@@ -450,12 +448,6 @@ func (eq *EventQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Event,
 			eq.withCreator != nil,
 		}
 	)
-	if eq.withCreator != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, event.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Event).scanValues(nil, columns)
 	}
@@ -568,7 +560,6 @@ func (eq *EventQuery) loadInvitations(ctx context.Context, query *InvitationQuer
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
 	query.Where(predicate.Invitation(func(s *sql.Selector) {
 		s.Where(sql.InValues(event.InvitationsColumn, fks...))
 	}))
@@ -577,13 +568,10 @@ func (eq *EventQuery) loadInvitations(ctx context.Context, query *InvitationQuer
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.event_uuid
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "event_uuid" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.EventUUID
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "event_uuid" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "event_uuid" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -593,10 +581,7 @@ func (eq *EventQuery) loadCreator(ctx context.Context, query *UserQuery, nodes [
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*Event)
 	for i := range nodes {
-		if nodes[i].creator_uuid == nil {
-			continue
-		}
-		fk := *nodes[i].creator_uuid
+		fk := nodes[i].CreatorUUID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}

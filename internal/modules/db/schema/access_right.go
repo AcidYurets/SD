@@ -26,8 +26,6 @@ func (AccessRight) Fields() []ent.Field {
 // Edges of the AccessRight.
 func (AccessRight) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("invitations", Invitation.Type).StorageKey(
-			edge.Column("access_right_code"),
-		),
+		edge.To("invitations", Invitation.Type),
 	}
 }

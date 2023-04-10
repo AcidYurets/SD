@@ -31,17 +31,27 @@ func (iu *InvitationUpdate) Where(ps ...predicate.Invitation) *InvitationUpdate 
 	return iu
 }
 
-// SetEventID sets the "event" edge to the Event entity by ID.
-func (iu *InvitationUpdate) SetEventID(id string) *InvitationUpdate {
-	iu.mutation.SetEventID(id)
+// SetUserUUID sets the "user_uuid" field.
+func (iu *InvitationUpdate) SetUserUUID(s string) *InvitationUpdate {
+	iu.mutation.SetUserUUID(s)
 	return iu
 }
 
-// SetNillableEventID sets the "event" edge to the Event entity by ID if the given value is not nil.
-func (iu *InvitationUpdate) SetNillableEventID(id *string) *InvitationUpdate {
-	if id != nil {
-		iu = iu.SetEventID(*id)
-	}
+// SetEventUUID sets the "event_uuid" field.
+func (iu *InvitationUpdate) SetEventUUID(s string) *InvitationUpdate {
+	iu.mutation.SetEventUUID(s)
+	return iu
+}
+
+// SetAccessRightCode sets the "access_right_code" field.
+func (iu *InvitationUpdate) SetAccessRightCode(a access.Type) *InvitationUpdate {
+	iu.mutation.SetAccessRightCode(a)
+	return iu
+}
+
+// SetEventID sets the "event" edge to the Event entity by ID.
+func (iu *InvitationUpdate) SetEventID(id string) *InvitationUpdate {
+	iu.mutation.SetEventID(id)
 	return iu
 }
 
@@ -56,14 +66,6 @@ func (iu *InvitationUpdate) SetUserID(id string) *InvitationUpdate {
 	return iu
 }
 
-// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
-func (iu *InvitationUpdate) SetNillableUserID(id *string) *InvitationUpdate {
-	if id != nil {
-		iu = iu.SetUserID(*id)
-	}
-	return iu
-}
-
 // SetUser sets the "user" edge to the User entity.
 func (iu *InvitationUpdate) SetUser(u *User) *InvitationUpdate {
 	return iu.SetUserID(u.ID)
@@ -72,14 +74,6 @@ func (iu *InvitationUpdate) SetUser(u *User) *InvitationUpdate {
 // SetAccessRightID sets the "access_right" edge to the AccessRight entity by ID.
 func (iu *InvitationUpdate) SetAccessRightID(id access.Type) *InvitationUpdate {
 	iu.mutation.SetAccessRightID(id)
-	return iu
-}
-
-// SetNillableAccessRightID sets the "access_right" edge to the AccessRight entity by ID if the given value is not nil.
-func (iu *InvitationUpdate) SetNillableAccessRightID(id *access.Type) *InvitationUpdate {
-	if id != nil {
-		iu = iu.SetAccessRightID(*id)
-	}
 	return iu
 }
 
@@ -138,7 +132,24 @@ func (iu *InvitationUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (iu *InvitationUpdate) check() error {
+	if _, ok := iu.mutation.EventID(); iu.mutation.EventCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Invitation.event"`)
+	}
+	if _, ok := iu.mutation.UserID(); iu.mutation.UserCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Invitation.user"`)
+	}
+	if _, ok := iu.mutation.AccessRightID(); iu.mutation.AccessRightCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Invitation.access_right"`)
+	}
+	return nil
+}
+
 func (iu *InvitationUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := iu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(invitation.Table, invitation.Columns, sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeString))
 	if ps := iu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -254,17 +265,27 @@ type InvitationUpdateOne struct {
 	mutation *InvitationMutation
 }
 
-// SetEventID sets the "event" edge to the Event entity by ID.
-func (iuo *InvitationUpdateOne) SetEventID(id string) *InvitationUpdateOne {
-	iuo.mutation.SetEventID(id)
+// SetUserUUID sets the "user_uuid" field.
+func (iuo *InvitationUpdateOne) SetUserUUID(s string) *InvitationUpdateOne {
+	iuo.mutation.SetUserUUID(s)
 	return iuo
 }
 
-// SetNillableEventID sets the "event" edge to the Event entity by ID if the given value is not nil.
-func (iuo *InvitationUpdateOne) SetNillableEventID(id *string) *InvitationUpdateOne {
-	if id != nil {
-		iuo = iuo.SetEventID(*id)
-	}
+// SetEventUUID sets the "event_uuid" field.
+func (iuo *InvitationUpdateOne) SetEventUUID(s string) *InvitationUpdateOne {
+	iuo.mutation.SetEventUUID(s)
+	return iuo
+}
+
+// SetAccessRightCode sets the "access_right_code" field.
+func (iuo *InvitationUpdateOne) SetAccessRightCode(a access.Type) *InvitationUpdateOne {
+	iuo.mutation.SetAccessRightCode(a)
+	return iuo
+}
+
+// SetEventID sets the "event" edge to the Event entity by ID.
+func (iuo *InvitationUpdateOne) SetEventID(id string) *InvitationUpdateOne {
+	iuo.mutation.SetEventID(id)
 	return iuo
 }
 
@@ -279,14 +300,6 @@ func (iuo *InvitationUpdateOne) SetUserID(id string) *InvitationUpdateOne {
 	return iuo
 }
 
-// SetNillableUserID sets the "user" edge to the User entity by ID if the given value is not nil.
-func (iuo *InvitationUpdateOne) SetNillableUserID(id *string) *InvitationUpdateOne {
-	if id != nil {
-		iuo = iuo.SetUserID(*id)
-	}
-	return iuo
-}
-
 // SetUser sets the "user" edge to the User entity.
 func (iuo *InvitationUpdateOne) SetUser(u *User) *InvitationUpdateOne {
 	return iuo.SetUserID(u.ID)
@@ -295,14 +308,6 @@ func (iuo *InvitationUpdateOne) SetUser(u *User) *InvitationUpdateOne {
 // SetAccessRightID sets the "access_right" edge to the AccessRight entity by ID.
 func (iuo *InvitationUpdateOne) SetAccessRightID(id access.Type) *InvitationUpdateOne {
 	iuo.mutation.SetAccessRightID(id)
-	return iuo
-}
-
-// SetNillableAccessRightID sets the "access_right" edge to the AccessRight entity by ID if the given value is not nil.
-func (iuo *InvitationUpdateOne) SetNillableAccessRightID(id *access.Type) *InvitationUpdateOne {
-	if id != nil {
-		iuo = iuo.SetAccessRightID(*id)
-	}
 	return iuo
 }
 
@@ -374,7 +379,24 @@ func (iuo *InvitationUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (iuo *InvitationUpdateOne) check() error {
+	if _, ok := iuo.mutation.EventID(); iuo.mutation.EventCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Invitation.event"`)
+	}
+	if _, ok := iuo.mutation.UserID(); iuo.mutation.UserCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Invitation.user"`)
+	}
+	if _, ok := iuo.mutation.AccessRightID(); iuo.mutation.AccessRightCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Invitation.access_right"`)
+	}
+	return nil
+}
+
 func (iuo *InvitationUpdateOne) sqlSave(ctx context.Context) (_node *Invitation, err error) {
+	if err := iuo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(invitation.Table, invitation.Columns, sqlgraph.NewFieldSpec(invitation.FieldID, field.TypeString))
 	id, ok := iuo.mutation.ID()
 	if !ok {

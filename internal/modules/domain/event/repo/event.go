@@ -7,8 +7,8 @@ import (
 	inv_ent "calend/internal/modules/db/ent/invitation"
 	user_ent "calend/internal/modules/db/ent/user"
 	"calend/internal/modules/domain/event/dto"
-	tags_repo "calend/internal/modules/domain/tag/repo"
-	user_repo "calend/internal/modules/domain/user/repo"
+	tag_dto "calend/internal/modules/domain/tag/dto"
+	"calend/internal/modules/domain/tag/repo"
 	"context"
 )
 
@@ -23,15 +23,8 @@ func NewEventRepo(client *ent.Client) *EventRepo {
 }
 
 func (r *EventRepo) GetByUuid(ctx context.Context, uuid string) (*dto.Event, error) {
-	event, err := r.client.Event.Query().
-		WithCreator().
-		WithInvitations(
-			func(query *ent.InvitationQuery) {
-				query.WithUser().WithAccessRight()
-			},
-		).
-		WithTags().
-		Where(event_ent.ID(uuid)).
+	event, err := r.client.Event.Query().Where(event_ent.ID(uuid)).
+		WithInvitations().
 		Only(ctx)
 	if err != nil {
 		return nil, db.WrapError(err)
@@ -40,20 +33,23 @@ func (r *EventRepo) GetByUuid(ctx context.Context, uuid string) (*dto.Event, err
 	return ToEventDTO(event), nil
 }
 
+func (r *EventRepo) ListTagsByEventUuid(ctx context.Context, uuid string) (tag_dto.Tags, error) {
+	tags, err := r.client.Event.Query().Where(event_ent.ID(uuid)).
+		QueryTags().
+		All(ctx)
+	if err != nil {
+		return nil, db.WrapError(err)
+	}
+
+	return repo.ToTagDTOs(tags), nil
+}
+
 func (r *EventRepo) GetCheckingInfoByUuid(ctx context.Context, uuid string) (*dto.Event, error) {
-	event, err := r.client.Event.Query().
-		WithCreator(func(q *ent.UserQuery) {
-			q.Select("uuid")
-		}).
+	event, err := r.client.Event.Query().Where(event_ent.ID(uuid)).
 		WithInvitations(func(q *ent.InvitationQuery) {
-			q.WithUser(func(q *ent.UserQuery) {
-				q.Select("uuid")
-			}).WithAccessRight(func(q *ent.AccessRightQuery) {
-				q.Select("code")
-			}).Select("uuid")
+			q.Select("user_uuid", "access_right_code", "event_uuid")
 		}).
-		Select("uuid").
-		Where(event_ent.ID(uuid)).
+		Select("creator_uuid").
 		Only(ctx)
 	if err != nil {
 		return nil, db.WrapError(err)
@@ -64,13 +60,6 @@ func (r *EventRepo) GetCheckingInfoByUuid(ctx context.Context, uuid string) (*dt
 
 func (r *EventRepo) ListAvailable(ctx context.Context, userUuid string) (dto.Events, error) {
 	events, err := r.client.Event.Query().
-		WithCreator().
-		WithInvitations(
-			func(query *ent.InvitationQuery) {
-				query.WithUser().WithAccessRight()
-			},
-		).
-		WithTags().
 		Where(
 			event_ent.Or(
 				// Либо переданный пользователь - создатель
@@ -82,7 +71,9 @@ func (r *EventRepo) ListAvailable(ctx context.Context, userUuid string) (dto.Eve
 					inv_ent.HasUserWith(user_ent.ID(userUuid)),
 				),
 			),
-		).All(ctx)
+		).
+		WithInvitations().
+		All(ctx)
 	if err != nil {
 		return nil, db.WrapError(err)
 	}
@@ -145,8 +136,7 @@ func ToEventDTO(model *ent.Event) *dto.Event {
 		Type:        model.Type,
 		IsWholeDay:  model.IsWholeDay,
 		Invitations: ToInvitationDTOs(model.Edges.Invitations),
-		Tags:        tags_repo.ToTagDTOs(model.Edges.Tags),
-		Creator:     user_repo.ToUserDTO(model.Edges.Creator),
+		CreatorUuid: model.CreatorUUID,
 	}
 }
 

@@ -29,6 +29,8 @@ const (
 	FieldType = "type"
 	// FieldIsWholeDay holds the string denoting the is_whole_day field in the database.
 	FieldIsWholeDay = "is_whole_day"
+	// FieldCreatorUUID holds the string denoting the creator_uuid field in the database.
+	FieldCreatorUUID = "creator_uuid"
 	// EdgeTags holds the string denoting the tags edge name in mutations.
 	EdgeTags = "tags"
 	// EdgeInvitations holds the string denoting the invitations edge name in mutations.
@@ -69,12 +71,7 @@ var Columns = []string{
 	FieldDescription,
 	FieldType,
 	FieldIsWholeDay,
-}
-
-// ForeignKeys holds the SQL foreign-keys that are owned by the "events"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"creator_uuid",
+	FieldCreatorUUID,
 }
 
 var (
@@ -87,11 +84,6 @@ var (
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}

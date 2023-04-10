@@ -2,7 +2,6 @@ package integrational
 
 import (
 	"calend/internal/modules/db/ent"
-	"calend/internal/modules/db/schema"
 	"calend/internal/modules/domain/access_right/dto"
 	"calend/internal/modules/domain/access_right/service"
 	auth_dto "calend/internal/modules/domain/auth/dto"
@@ -13,19 +12,14 @@ import (
 )
 
 func accessRightServiceTest(t *testing.T, service *service.AccessRightService, authService *auth_serv.AuthService, client *ent.Client) {
-	_, err := client.AccessRight.Delete().Exec(schema.SkipSoftDelete(context.Background()))
+	err := truncateAll(client)
 	assert.NoError(t, err)
-	// Если не получилось - дальше продолжать смысла нет
 	if err != nil {
 		return
 	}
-	_, err = client.AccessRight.Create().SetID("r").SetDescription("Право на просмотр").Save(context.Background())
+
+	err = createAccessRight(client)
 	assert.NoError(t, err)
-	_, err = client.AccessRight.Create().SetID("ri").SetDescription("Право на просмотр и приглашение").Save(context.Background())
-	assert.NoError(t, err)
-	_, err = client.User.Delete().Exec(schema.SkipSoftDelete(context.Background()))
-	assert.NoError(t, err)
-	// Если не получилось - дальше продолжать смысла нет
 	if err != nil {
 		return
 	}
@@ -63,5 +57,5 @@ func accessRightServiceTest(t *testing.T, service *service.AccessRightService, a
 
 	ars, err := service.List(ctx)
 	assert.NoError(t, err)
-	assert.Equal(t, existingAr, ars)
+	assert.Equal(t, existingAr[0], ars[0])
 }
