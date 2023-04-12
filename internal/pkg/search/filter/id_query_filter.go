@@ -1,6 +1,8 @@
 package filter
 
-import "calend/internal/pkg/search/engine/db"
+import (
+	"calend/internal/pkg/search/engine/db/ent_types"
+)
 
 // IDQueryFilter - фильтр по id и uuid
 //
@@ -16,7 +18,7 @@ type IDQueryFilter struct {
 	WithHierarchy *bool
 }
 
-func (f *IDQueryFilter) Build(field string, b Builder, wrapper func(p db.Predicate) db.Predicate) {
+func (f *IDQueryFilter) Build(field string, b Builder, wrapper func(p ent_types.Predicate) ent_types.Predicate) {
 
 	if !f.IsValid() {
 		return

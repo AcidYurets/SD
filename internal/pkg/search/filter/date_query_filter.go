@@ -1,7 +1,7 @@
 package filter
 
 import (
-	"calend/internal/pkg/search/engine/db"
+	"calend/internal/pkg/search/engine/db/ent_types"
 	"time"
 )
 
@@ -20,7 +20,7 @@ type DateQueryFilter struct {
 	IncludeUpper *bool
 }
 
-func (f *DateQueryFilter) Build(field string, b Builder, wrapper func(p db.Predicate) db.Predicate) {
+func (f *DateQueryFilter) Build(field string, b Builder, wrapper func(p ent_types.Predicate) ent_types.Predicate) {
 
 	if !f.IsValid() {
 		return

@@ -1,5 +1,0 @@
-image: golang:1.20
-
-test:
-  script:
-    - cd ./internal && go test ./...

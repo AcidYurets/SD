@@ -5,10 +5,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
-type SortOptions func(options *sql.OrderTermOptions)
-
 type SortBuilder struct {
-	predicates []Predicate
 }
 
 func (b *SortBuilder) Build() func(options *sql.OrderTermOptions) {
