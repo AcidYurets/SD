@@ -434,11 +434,7 @@ func HasInvitations() predicate.User {
 // HasInvitationsWith applies the HasEdge predicate on the "invitations" edge with a given conditions (other predicates).
 func HasInvitationsWith(preds ...predicate.Invitation) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(InvitationsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, InvitationsTable, InvitationsColumn),
-		)
+		step := newInvitationsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
@@ -461,11 +457,7 @@ func HasCreatedEvents() predicate.User {
 // HasCreatedEventsWith applies the HasEdge predicate on the "created_events" edge with a given conditions (other predicates).
 func HasCreatedEventsWith(preds ...predicate.Event) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(CreatedEventsInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, CreatedEventsTable, CreatedEventsColumn),
-		)
+		step := newCreatedEventsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

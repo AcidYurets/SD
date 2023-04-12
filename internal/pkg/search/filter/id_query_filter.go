@@ -1,5 +1,7 @@
 package filter
 
+import "calend/internal/pkg/search/engine/db"
+
 // IDQueryFilter - фильтр по id и uuid
 //
 //	uuid - требуется передать поле с типа keyword, например Uuid.keyword
@@ -14,28 +16,28 @@ type IDQueryFilter struct {
 	WithHierarchy *bool
 }
 
-func (f *IDQueryFilter) Build(field string, b Builder) {
+func (f *IDQueryFilter) Build(field string, b Builder, wrapper func(p db.Predicate) db.Predicate) {
 
 	if !f.IsValid() {
 		return
 	}
 
 	if f.Eq != nil {
-		b.Eq(field, *f.Eq)
+		b.Eq(field, *f.Eq, wrapper)
 	}
 	if len(f.In) > 0 {
 		var values []interface{}
 		for _, val := range f.In {
 			values = append(values, val)
 		}
-		b.In(field, values)
+		b.In(field, values, wrapper)
 	}
 	if len(f.Nin) > 0 {
 		var values []interface{}
 		for _, val := range f.Nin {
 			values = append(values, val)
 		}
-		b.Nin(field, values)
+		b.Nin(field, values, wrapper)
 	}
 
 }

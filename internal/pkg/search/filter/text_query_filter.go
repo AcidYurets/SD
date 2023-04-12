@@ -1,5 +1,7 @@
 package filter
 
+import "calend/internal/pkg/search/engine/db"
+
 type TextQueryFilter struct {
 	// Полнотекстовый поиск
 	Ts *string
@@ -11,18 +13,18 @@ type TextQueryFilter struct {
 	Nin []string
 }
 
-func (f *TextQueryFilter) Build(field string, b Builder) {
+func (f *TextQueryFilter) Build(field string, b Builder, wrapper func(p db.Predicate) db.Predicate) {
 
 	if !f.IsValid() {
 		return
 	}
 
 	if f.Eq != nil {
-		b.Eq(field, *f.Eq)
+		b.Eq(field, *f.Eq, wrapper)
 	}
 
 	if f.Ts != nil {
-		b.Ts(field, *f.Ts)
+		b.Ts(field, *f.Ts, wrapper)
 	}
 
 	if len(f.In) > 0 {
@@ -32,7 +34,7 @@ func (f *TextQueryFilter) Build(field string, b Builder) {
 			values = append(values, val)
 		}
 
-		b.In(field, values)
+		b.In(field, values, wrapper)
 	}
 
 	if len(f.Nin) > 0 {
@@ -41,7 +43,7 @@ func (f *TextQueryFilter) Build(field string, b Builder) {
 			values = append(values, val)
 		}
 
-		b.Nin(field, values)
+		b.Nin(field, values, wrapper)
 
 	}
 

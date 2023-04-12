@@ -139,11 +139,7 @@ func HasInvitations() predicate.AccessRight {
 // HasInvitationsWith applies the HasEdge predicate on the "invitations" edge with a given conditions (other predicates).
 func HasInvitationsWith(preds ...predicate.Invitation) predicate.AccessRight {
 	return predicate.AccessRight(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(InvitationsInverseTable, InvitationFieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, InvitationsTable, InvitationsColumn),
-		)
+		step := newInvitationsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

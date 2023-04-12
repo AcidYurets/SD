@@ -25,6 +25,7 @@ func NewEventRepo(client *ent.Client) *EventRepo {
 func (r *EventRepo) GetByUuid(ctx context.Context, uuid string) (*dto.Event, error) {
 	event, err := r.client.Event.Query().Where(event_ent.ID(uuid)).
 		WithInvitations().
+		Order(event_ent.ByDescription()).
 		Only(ctx)
 	if err != nil {
 		return nil, db.WrapError(err)

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 )
 
@@ -37,7 +38,8 @@ type Event struct {
 	CreatorUUID string `json:"creator_uuid,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the EventQuery when eager-loading is set.
-	Edges EventEdges `json:"edges"`
+	Edges        EventEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // EventEdges holds the relations/edges for other nodes in the graph.
@@ -96,7 +98,7 @@ func (*Event) scanValues(columns []string) ([]any, error) {
 		case event.FieldCreatedAt, event.FieldUpdatedAt, event.FieldDeletedAt, event.FieldTimestamp:
 			values[i] = new(sql.NullTime)
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Event", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -171,9 +173,17 @@ func (e *Event) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				e.CreatorUUID = value.String
 			}
+		default:
+			e.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the Event.
+// This includes values selected through modifiers, order, etc.
+func (e *Event) Value(name string) (ent.Value, error) {
+	return e.selectValues.Get(name)
 }
 
 // QueryTags queries the "tags" edge of the Event entity.

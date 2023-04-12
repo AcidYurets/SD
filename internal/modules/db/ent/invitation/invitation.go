@@ -2,6 +2,11 @@
 
 package invitation
 
+import (
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+)
+
 const (
 	// Label holds the string label denoting the invitation type in the database.
 	Label = "invitation"
@@ -68,3 +73,68 @@ var (
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() string
 )
+
+// Order defines the ordering method for the Invitation queries.
+type Order func(*sql.Selector)
+
+// ByID orders the results by the id field.
+func ByID(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByUserUUID orders the results by the user_uuid field.
+func ByUserUUID(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldUserUUID, opts...).ToFunc()
+}
+
+// ByEventUUID orders the results by the event_uuid field.
+func ByEventUUID(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldEventUUID, opts...).ToFunc()
+}
+
+// ByAccessRightCode orders the results by the access_right_code field.
+func ByAccessRightCode(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldAccessRightCode, opts...).ToFunc()
+}
+
+// ByEventField orders the results by event field.
+func ByEventField(field string, opts ...sql.OrderTermOption) Order {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEventStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByUserField orders the results by user field.
+func ByUserField(field string, opts ...sql.OrderTermOption) Order {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newUserStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByAccessRightField orders the results by access_right field.
+func ByAccessRightField(field string, opts ...sql.OrderTermOption) Order {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAccessRightStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newEventStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EventInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, EventTable, EventColumn),
+	)
+}
+func newUserStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(UserInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
+	)
+}
+func newAccessRightStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AccessRightInverseTable, AccessRightFieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, AccessRightTable, AccessRightColumn),
+	)
+}

@@ -22,7 +22,7 @@ import (
 type InvitationQuery struct {
 	config
 	ctx             *QueryContext
-	order           []OrderFunc
+	order           []invitation.Order
 	inters          []Interceptor
 	predicates      []predicate.Invitation
 	withEvent       *EventQuery
@@ -59,7 +59,7 @@ func (iq *InvitationQuery) Unique(unique bool) *InvitationQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (iq *InvitationQuery) Order(o ...OrderFunc) *InvitationQuery {
+func (iq *InvitationQuery) Order(o ...invitation.Order) *InvitationQuery {
 	iq.order = append(iq.order, o...)
 	return iq
 }
@@ -319,7 +319,7 @@ func (iq *InvitationQuery) Clone() *InvitationQuery {
 	return &InvitationQuery{
 		config:          iq.config,
 		ctx:             iq.ctx.Clone(),
-		order:           append([]OrderFunc{}, iq.order...),
+		order:           append([]invitation.Order{}, iq.order...),
 		inters:          append([]Interceptor{}, iq.inters...),
 		predicates:      append([]predicate.Invitation{}, iq.predicates...),
 		withEvent:       iq.withEvent.Clone(),
@@ -599,6 +599,15 @@ func (iq *InvitationQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != invitation.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if iq.withEvent != nil {
+			_spec.Node.AddColumnOnce(invitation.FieldEventUUID)
+		}
+		if iq.withUser != nil {
+			_spec.Node.AddColumnOnce(invitation.FieldUserUUID)
+		}
+		if iq.withAccessRight != nil {
+			_spec.Node.AddColumnOnce(invitation.FieldAccessRightCode)
 		}
 	}
 	if ps := iq.predicates; len(ps) > 0 {

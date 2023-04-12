@@ -4,7 +4,12 @@ package intercept
 
 import (
 	"calend/internal/modules/db/ent"
+	"calend/internal/modules/db/ent/accessright"
+	"calend/internal/modules/db/ent/event"
+	"calend/internal/modules/db/ent/invitation"
 	"calend/internal/modules/db/ent/predicate"
+	"calend/internal/modules/db/ent/tag"
+	"calend/internal/modules/db/ent/user"
 	"context"
 	"fmt"
 
@@ -24,7 +29,7 @@ type Query interface {
 	// Unique configures the query builder to filter duplicate records.
 	Unique(bool)
 	// Order specifies how the records should be ordered.
-	Order(...ent.OrderFunc)
+	Order(...func(*sql.Selector))
 	// WhereP appends storage-level predicates to the query builder. Using this method, users
 	// can use type-assertion to append predicates that do not depend on any generated package.
 	WhereP(...func(*sql.Selector))
@@ -206,52 +211,56 @@ func (f TraverseUser) Traverse(ctx context.Context, q ent.Query) error {
 func NewQuery(q ent.Query) (Query, error) {
 	switch q := q.(type) {
 	case *ent.AccessRightQuery:
-		return &query[*ent.AccessRightQuery, predicate.AccessRight]{typ: ent.TypeAccessRight, tq: q}, nil
+		return &query[*ent.AccessRightQuery, predicate.AccessRight, accessright.Order]{typ: ent.TypeAccessRight, tq: q}, nil
 	case *ent.EventQuery:
-		return &query[*ent.EventQuery, predicate.Event]{typ: ent.TypeEvent, tq: q}, nil
+		return &query[*ent.EventQuery, predicate.Event, event.Order]{typ: ent.TypeEvent, tq: q}, nil
 	case *ent.InvitationQuery:
-		return &query[*ent.InvitationQuery, predicate.Invitation]{typ: ent.TypeInvitation, tq: q}, nil
+		return &query[*ent.InvitationQuery, predicate.Invitation, invitation.Order]{typ: ent.TypeInvitation, tq: q}, nil
 	case *ent.TagQuery:
-		return &query[*ent.TagQuery, predicate.Tag]{typ: ent.TypeTag, tq: q}, nil
+		return &query[*ent.TagQuery, predicate.Tag, tag.Order]{typ: ent.TypeTag, tq: q}, nil
 	case *ent.UserQuery:
-		return &query[*ent.UserQuery, predicate.User]{typ: ent.TypeUser, tq: q}, nil
+		return &query[*ent.UserQuery, predicate.User, user.Order]{typ: ent.TypeUser, tq: q}, nil
 	default:
 		return nil, fmt.Errorf("unknown query type %T", q)
 	}
 }
 
-type query[T any, P ~func(*sql.Selector)] struct {
+type query[T any, P ~func(*sql.Selector), R ~func(*sql.Selector)] struct {
 	typ string
 	tq  interface {
 		Limit(int) T
 		Offset(int) T
 		Unique(bool) T
-		Order(...ent.OrderFunc) T
+		Order(...R) T
 		Where(...P) T
 	}
 }
 
-func (q query[T, P]) Type() string {
+func (q query[T, P, R]) Type() string {
 	return q.typ
 }
 
-func (q query[T, P]) Limit(limit int) {
+func (q query[T, P, R]) Limit(limit int) {
 	q.tq.Limit(limit)
 }
 
-func (q query[T, P]) Offset(offset int) {
+func (q query[T, P, R]) Offset(offset int) {
 	q.tq.Offset(offset)
 }
 
-func (q query[T, P]) Unique(unique bool) {
+func (q query[T, P, R]) Unique(unique bool) {
 	q.tq.Unique(unique)
 }
 
-func (q query[T, P]) Order(orders ...ent.OrderFunc) {
-	q.tq.Order(orders...)
+func (q query[T, P, R]) Order(orders ...func(*sql.Selector)) {
+	rs := make([]R, len(orders))
+	for i := range orders {
+		rs[i] = orders[i]
+	}
+	q.tq.Order(rs...)
 }
 
-func (q query[T, P]) WhereP(ps ...func(*sql.Selector)) {
+func (q query[T, P, R]) WhereP(ps ...func(*sql.Selector)) {
 	p := make([]P, len(ps))
 	for i := range ps {
 		p[i] = ps[i]

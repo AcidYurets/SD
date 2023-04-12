@@ -21,7 +21,7 @@ import (
 type AccessRightQuery struct {
 	config
 	ctx             *QueryContext
-	order           []OrderFunc
+	order           []accessright.Order
 	inters          []Interceptor
 	predicates      []predicate.AccessRight
 	withInvitations *InvitationQuery
@@ -56,7 +56,7 @@ func (arq *AccessRightQuery) Unique(unique bool) *AccessRightQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (arq *AccessRightQuery) Order(o ...OrderFunc) *AccessRightQuery {
+func (arq *AccessRightQuery) Order(o ...accessright.Order) *AccessRightQuery {
 	arq.order = append(arq.order, o...)
 	return arq
 }
@@ -272,7 +272,7 @@ func (arq *AccessRightQuery) Clone() *AccessRightQuery {
 	return &AccessRightQuery{
 		config:          arq.config,
 		ctx:             arq.ctx.Clone(),
-		order:           append([]OrderFunc{}, arq.order...),
+		order:           append([]accessright.Order{}, arq.order...),
 		inters:          append([]Interceptor{}, arq.inters...),
 		predicates:      append([]predicate.AccessRight{}, arq.predicates...),
 		withInvitations: arq.withInvitations.Clone(),

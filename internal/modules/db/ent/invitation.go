@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"strings"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 )
 
@@ -27,7 +28,8 @@ type Invitation struct {
 	AccessRightCode access.Type `json:"access_right_code,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the InvitationQuery when eager-loading is set.
-	Edges InvitationEdges `json:"edges"`
+	Edges        InvitationEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // InvitationEdges holds the relations/edges for other nodes in the graph.
@@ -90,7 +92,7 @@ func (*Invitation) scanValues(columns []string) ([]any, error) {
 		case invitation.FieldID, invitation.FieldUserUUID, invitation.FieldEventUUID, invitation.FieldAccessRightCode:
 			values[i] = new(sql.NullString)
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Invitation", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -128,9 +130,17 @@ func (i *Invitation) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				i.AccessRightCode = access.Type(value.String)
 			}
+		default:
+			i.selectValues.Set(columns[j], values[j])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the Invitation.
+// This includes values selected through modifiers, order, etc.
+func (i *Invitation) Value(name string) (ent.Value, error) {
+	return i.selectValues.Get(name)
 }
 
 // QueryEvent queries the "event" edge of the Invitation entity.

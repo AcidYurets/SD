@@ -20,7 +20,7 @@ import (
 type TagQuery struct {
 	config
 	ctx        *QueryContext
-	order      []OrderFunc
+	order      []tag.Order
 	inters     []Interceptor
 	predicates []predicate.Tag
 	withEvents *EventQuery
@@ -55,7 +55,7 @@ func (tq *TagQuery) Unique(unique bool) *TagQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (tq *TagQuery) Order(o ...OrderFunc) *TagQuery {
+func (tq *TagQuery) Order(o ...tag.Order) *TagQuery {
 	tq.order = append(tq.order, o...)
 	return tq
 }
@@ -271,7 +271,7 @@ func (tq *TagQuery) Clone() *TagQuery {
 	return &TagQuery{
 		config:     tq.config,
 		ctx:        tq.ctx.Clone(),
-		order:      append([]OrderFunc{}, tq.order...),
+		order:      append([]tag.Order{}, tq.order...),
 		inters:     append([]Interceptor{}, tq.inters...),
 		predicates: append([]predicate.Tag{}, tq.predicates...),
 		withEvents: tq.withEvents.Clone(),
