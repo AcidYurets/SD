@@ -20,15 +20,16 @@ type EventFilter struct {
 	Description *filter.TextQueryFilter // Поиск по описанию
 	Type        *filter.TextQueryFilter // Поиск по типу
 	IsWholeDay  *filter.BoolQueryFilter // Поиск по признаку полного дня
-
 	CreatorUuid *filter.IDQueryFilter   // Поиск по Uuid создателя
-	CreatorName *filter.TextQueryFilter // Поиск по имени создателя
+
+	CreatorLogin *filter.TextQueryFilter // Поиск по логину создателя
+	TagName      *filter.TextQueryFilter // Поиск по названию тегов
 }
 
 type EventSort struct {
-	Timestamp   *sort.Direction // По временной метке
-	Name        *sort.Direction // По названию
-	Description *sort.Direction // По описанию
-	Type        *sort.Direction // По типу
-	CreatorName *sort.Direction // По имени создателя
+	Timestamp    *sort.Direction // По временной метке
+	Name         *sort.Direction // По названию
+	Description  *sort.Direction // По описанию
+	Type         *sort.Direction // По типу
+	CreatorLogin *sort.Direction // По имени создателя
 }

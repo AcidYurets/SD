@@ -8,7 +8,8 @@ import (
 	ev_dto "calend/internal/modules/domain/event/dto"
 	"calend/internal/modules/domain/event/repo"
 	"calend/internal/modules/domain/search/dto"
-	filter_db "calend/internal/pkg/search/engine/db"
+	search_pkg "calend/internal/pkg/search/engine/db"
+	"calend/internal/pkg/search/engine/db/types"
 	"calend/internal/pkg/search/paginate"
 	"context"
 	"strings"
@@ -47,14 +48,26 @@ func (r *SearchRepo) buildEventFilters(f *dto.EventFilter) []predicate.Event {
 	if f == nil {
 		return nil
 	}
-	builder := &filter_db.QueryBuilder{}
 
 	ftsSearch := []string{
 		"name",
 		"description",
 		"type",
-		//"creator_name",
+		"users.login",
+		"tags.name",
 	}
+
+	// Составляем карту для получения полей из связанных сущностей
+	wrappersMap := map[string]types.Wrapper{
+		"users.login": func(p types.Predicate) types.Predicate {
+			return types.Predicate(event_ent.HasCreatorWith(predicate.User(p)))
+		},
+		"tags.name": func(p types.Predicate) types.Predicate {
+			return types.Predicate(event_ent.HasTagsWith(predicate.Tag(p)))
+		},
+	}
+
+	builder := search_pkg.NewQueryBuilder(wrappersMap)
 
 	builder.AddField("timestamp", f.Timestamp)
 	builder.AddField("name", f.Name)
@@ -62,7 +75,8 @@ func (r *SearchRepo) buildEventFilters(f *dto.EventFilter) []predicate.Event {
 	builder.AddField("type", f.Type)
 	builder.AddField("is_whole_day", f.IsWholeDay)
 	builder.AddField("creator_uuid", f.CreatorUuid)
-	//builder.AddField("creator_name", f.CreatorName)
+	builder.AddField("users.login", f.CreatorLogin)
+	builder.AddField("tags.name", f.TagName)
 	builder.AddField(strings.Join(ftsSearch, " "), f.FTSearchStr)
 
 	predicates := builder.Build()
@@ -79,13 +93,21 @@ func (r *SearchRepo) buildEventSorts(f *dto.EventSort) []event_ent.Order {
 	if f == nil {
 		return nil
 	}
-	builder := &filter_db.SortBuilder{}
+
+	// Составляем карту для получения полей из связанных сущностей
+	wrappersMap := map[string]types.Wrapper{
+		"users.login": func(p types.Predicate) types.Predicate {
+			return types.Predicate(event_ent.HasCreatorWith(predicate.User(p)))
+		},
+	}
+
+	builder := search_pkg.NewSortBuilder(wrappersMap)
 
 	builder.AddField("timestamp", f.Timestamp)
 	builder.AddField("name", f.Name)
 	builder.AddField("description", f.Description)
 	builder.AddField("type", f.Type)
-	//builder.AddField("creator_name", f.CreatorName)
+	builder.AddField("users.login", f.CreatorLogin)
 
 	predicates := builder.Build()
 

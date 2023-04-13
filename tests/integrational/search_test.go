@@ -99,13 +99,19 @@ func searchServiceTest(t *testing.T, service *service.SearchService, eventServic
 
 	// Производим поиск события
 	sortDir := sort.DirectionDesc
-	searchRequest := &search_dto.EventSearchRequest{
+	searchRequest1 := &search_dto.EventSearchRequest{
 		Filter: &search_dto.EventFilter{
 			Name: &filter.TextQueryFilter{
 				Ts: ptr.String("Кон"),
 			},
 			Description: &filter.TextQueryFilter{
 				Ts: ptr.String("смо"),
+			},
+			CreatorLogin: &filter.TextQueryFilter{
+				Ts: ptr.String("yur"),
+			},
+			TagName: &filter.TextQueryFilter{
+				Ts: ptr.String("друзей"),
 			},
 		},
 		Sort: &search_dto.EventSort{
@@ -117,9 +123,25 @@ func searchServiceTest(t *testing.T, service *service.SearchService, eventServic
 			PageSize: ptr.Int(20),
 		},
 	}
-	es1, err := service.SearchEvents(ctx1, searchRequest)
+	es1, err := service.SearchEvents(ctx1, searchRequest1)
 	assert.NoError(t, err)
 	assert.Len(t, es1, 1)
-	fmt.Println(es1)
+
+	// Производим полнотекстовой поиск события
+	searchRequest2 := &search_dto.EventSearchRequest{
+		Filter: &search_dto.EventFilter{
+			FTSearchStr: &filter.FTSQueryFilter{
+				Str: "пой смо",
+			},
+		},
+		Paginate: &paginate.ByPage{
+			Page:     ptr.Int(1),
+			PageSize: ptr.Int(20),
+		},
+	}
+	es2, err := service.SearchEvents(ctx1, searchRequest2)
+	assert.NoError(t, err)
+	assert.Len(t, es2, 1)
+	fmt.Println(es2)
 
 }
