@@ -29,13 +29,12 @@ func (b *QueryBuilder) AddField(name string, builder search.QueryFieldBuilder, o
 	builder.Build(name, b, wrapper)
 }
 
-func (b *QueryBuilder) Build() func(*sql.Selector) {
+func (b *QueryBuilder) Build() []ent_types.Predicate {
 	if len(b.predicates) == 0 {
 		return nil
 	}
 
-	// Соединяем все фильтры через И
-	return and(b.predicates...)
+	return b.predicates
 }
 
 func (b *QueryBuilder) add(pred ent_types.Predicate) {
@@ -57,7 +56,7 @@ func (b *QueryBuilder) Ts(field string, value string, wrapper func(p ent_types.P
 
 		// Проверяем все слова на наличие в заданном поле
 		for _, word := range words {
-			likes = append(likes, sql.FieldContains(field, word))
+			likes = append(likes, sql.FieldContainsFold(field, word))
 		}
 		// Поле должно содержать все слова из запроса, поэтому соединяем через И
 		queries = append(queries, and(likes...))

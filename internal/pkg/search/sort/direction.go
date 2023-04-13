@@ -1,5 +1,7 @@
 package sort
 
+import "calend/internal/pkg/search/engine/db/ent_types"
+
 type Direction string
 
 func (d *Direction) IsValid() bool {
@@ -16,7 +18,7 @@ func (d *Direction) IsValid() bool {
 	}
 }
 
-func (d *Direction) Build(field string, b Builder) {
+func (d *Direction) Build(field string, b Builder, wrapper func(p ent_types.Predicate) ent_types.Predicate) {
 
 	if !d.IsValid() {
 		return
@@ -28,7 +30,7 @@ func (d *Direction) Build(field string, b Builder) {
 		asc = false
 	}
 
-	b.AddSort(field, asc)
+	b.AddSort(field, asc, wrapper)
 
 }
 

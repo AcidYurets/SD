@@ -5,6 +5,7 @@ import (
 	ar_serv "calend/internal/modules/domain/access_right/service"
 	auth_serv "calend/internal/modules/domain/auth/service"
 	event_serv "calend/internal/modules/domain/event/service"
+	search_serv "calend/internal/modules/domain/search/service"
 	tag_serv "calend/internal/modules/domain/tag/service"
 	user_serv "calend/internal/modules/domain/user/service"
 	"context"
@@ -30,6 +31,7 @@ func execTests(
 	authService *auth_serv.AuthService,
 	arService *ar_serv.AccessRightService,
 	eventService *event_serv.EventService,
+	searchService *search_serv.SearchService,
 
 	client *ent.Client,
 	lifecycle fx.Lifecycle,
@@ -38,6 +40,7 @@ func execTests(
 	lifecycle.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			go func() {
+				searchServiceTest(t, searchService, eventService, tagService, authService, client)
 				eventServiceTest(t, eventService, tagService, authService, client)
 				authServiceTest(t, userService, authService, client)
 				userServiceTest(t, userService, authService, client)

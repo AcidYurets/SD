@@ -20,6 +20,7 @@ type EventFilter struct {
 	Description *filter.TextQueryFilter // Поиск по описанию
 	Type        *filter.TextQueryFilter // Поиск по типу
 	IsWholeDay  *filter.BoolQueryFilter // Поиск по признаку полного дня
+
 	CreatorUuid *filter.IDQueryFilter   // Поиск по Uuid создателя
 	CreatorName *filter.TextQueryFilter // Поиск по имени создателя
 }

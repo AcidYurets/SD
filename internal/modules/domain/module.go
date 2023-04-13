@@ -4,6 +4,7 @@ import (
 	"calend/internal/modules/domain/access_right"
 	"calend/internal/modules/domain/auth"
 	"calend/internal/modules/domain/event"
+	"calend/internal/modules/domain/search"
 	"calend/internal/modules/domain/tag"
 	"calend/internal/modules/domain/user"
 	"go.uber.org/fx"
@@ -16,6 +17,7 @@ var (
 		event.Module,
 		tag.Module,
 		user.Module,
+		search.Module,
 	)
 	Invokables = fx.Options(
 		access_right.Invokables,
@@ -23,5 +25,6 @@ var (
 		event.Invokables,
 		tag.Invokables,
 		user.Invokables,
+		search.Invokables,
 	)
 )

@@ -13,5 +13,5 @@ type QueryFieldBuilder interface {
 
 type SortFieldBuilder interface {
 	IsValid() bool
-	Build(field string, b sort.Builder)
+	Build(field string, b sort.Builder, wrapper func(p ent_types.Predicate) ent_types.Predicate)
 }
