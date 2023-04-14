@@ -32,6 +32,9 @@ type Config struct {
 
 func NewConfig(app app.App, logger *zap.Logger, logLevel zap.AtomicLevel) (Config, error) {
 	config := Config{
+		HTTPServerHost: "localhost",
+		HTTPServerPort: "4040",
+
 		AutoMigrate:      true,
 		TraceSQLCommands: true,
 		Secret:           "123",

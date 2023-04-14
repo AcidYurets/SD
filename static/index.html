@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<body style="margin: 0; overflow-x: hidden; overflow-y: hidden">
+<div id="sandbox" style="height:100vh; width:100vw;"></div>
+<script src="./embeddable-sandbox.umd.production.min.js"></script>
+<script>
+    new window.EmbeddedSandbox({
+        target: '#sandbox',
+        initialEndpoint: window
+            .location.origin + '/graphql',
+        includeCookies: false,
+    });
+    // advanced options: https://www.apollographql.com/docs/studio/explorer/sandbox#embedding-sandbox
+</script>
+</body>
+
+</html>

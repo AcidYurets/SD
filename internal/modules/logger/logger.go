@@ -5,10 +5,14 @@ import (
 	"context"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func NewLogger(app app.App) (*zap.Logger, zap.AtomicLevel, error) {
-	logger, err := zap.NewProduction()
+	config := zap.NewDevelopmentConfig()
+	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	logger, err := config.Build()
+
 	loggerLevel := zap.NewAtomicLevelAt(zap.InfoLevel)
 
 	return logger, loggerLevel, err
