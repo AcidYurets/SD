@@ -1,0 +1,5 @@
+type User @goModel(model: "calend/internal/modules/domain/user/dto.User") {
+    Uuid: ID!
+    Login: String!
+    Phone: String!
+}

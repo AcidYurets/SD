@@ -1,0 +1,8 @@
+extend type Query {
+    Login(credentials: UserCredentials!): JWT!
+}
+
+input UserCredentials @goModel(model: "calend/internal/modules/domain/auth/dto.UserCredentials") {
+    Login: String!
+    Password: String!
+}

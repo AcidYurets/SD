@@ -10,7 +10,7 @@ import (
 
 //go:generate go run -mod=mod github.com/99designs/gqlgen@v0.17.29
 
-func RegisterQraphQL(router *mux.Router, resolver *resolvers.Resolver) {
+func RegisterGraphQL(router *mux.Router, resolver *resolvers.Resolver) {
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
 	// Раздаем содержимое папки static с gql песочницей

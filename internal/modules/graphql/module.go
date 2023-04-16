@@ -7,5 +7,5 @@ import (
 
 var (
 	Module     = fx.Provide(resolvers.NewResolver)
-	Invokables = fx.Invoke(RegisterQraphQL)
+	Invokables = fx.Invoke(RegisterGraphQL)
 )

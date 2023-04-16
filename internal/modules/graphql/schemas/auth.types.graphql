@@ -1,0 +1,15 @@
+type Tokens @goModel(model: "calend/internal/modules/domain/auth/dto.Tokens") {
+    AccessToken: String!
+    RefreshToken: String!
+}
+
+type Session @goModel(model: "calend/internal/models/session.Session") {
+    SID: String!
+    User: User!
+}
+
+type JWT @goModel(model: "calend/internal/modules/domain/auth/dto.JWT") {
+    AccessToken: String!
+    RefreshToken: String!
+    Session: Session!
+}
