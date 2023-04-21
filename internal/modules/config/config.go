@@ -10,12 +10,8 @@ import (
 type Config struct {
 	Secret string `envconfig:"SECRET"`
 
-	DBUser    string `envconfig:"DB_USER"`
-	DBPass    string `envconfig:"DB_PASS"`
-	DBHost    string `envconfig:"DB_HOST" default:"db"`
-	DBPort    string `envconfig:"DB_PORT" default:"5432"`
-	DBName    string `envconfig:"DB_NAME" default:"main"`
-	DBSSLMode string `envconfig:"DB_SSL_MODE" default:"disable" validate:"oneof=disable enable"`
+	DBDriver     string `envconfig:"DB_DRIVER" default:"postgres"`
+	DBConnString string `envconfig:"DB_CONN_STRING"`
 
 	SQLSlowThreshold int    `envconfig:"SQL_SLOW_THRESHOLD" default:"600"`
 	TraceSQLCommands bool   `envconfig:"TRACE_SQL_COMMANDS" default:"false"`
@@ -32,6 +28,9 @@ type Config struct {
 
 func NewConfig(app app.App, logger *zap.Logger, logLevel zap.AtomicLevel) (Config, error) {
 	config := Config{
+		DBDriver:     "postgres",
+		DBConnString: "host=localhost port=5432 user=postgres dbname=server_db password=passw0rd sslmode=disable",
+
 		HTTPServerHost: "localhost",
 		HTTPServerPort: "4040",
 

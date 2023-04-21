@@ -9,9 +9,12 @@ import (
 )
 
 func WrapError(err error) error {
+	// Если запись не найдена
 	if ent.IsNotFound(err) {
 		return err_const.ErrDatabaseRecordNotFound
 	}
+
+	// Если нарушено ограничение целостности
 	if ent.IsConstraintError(err) {
 		// Получаем обернутую ошибку драйвера
 		err = errors.Unwrap(err)

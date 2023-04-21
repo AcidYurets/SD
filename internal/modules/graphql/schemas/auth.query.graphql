@@ -1,5 +1,6 @@
 extend type Query {
     Login(credentials: UserCredentials!): JWT!
+    RefreshToken(refreshToken: String!): Tokens!
 }
 
 input UserCredentials @goModel(model: "calend/internal/modules/domain/auth/dto.UserCredentials") {

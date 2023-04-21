@@ -15,3 +15,10 @@ func (r *queryResolver) Login(ctx context.Context, credentials dto.UserCredentia
 
 	return jwt, err
 }
+
+// RefreshToken is the resolver for the RefreshToken field.
+func (r *queryResolver) RefreshToken(ctx context.Context, refreshToken string) (*dto.Tokens, error) {
+	tokens, err := r.authService.RefreshAccessToken(ctx, refreshToken)
+
+	return tokens, err
+}

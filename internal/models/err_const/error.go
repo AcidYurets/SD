@@ -14,7 +14,7 @@ const (
 	ErrIdValidate   = Const("неверно указан Id объекта")
 	ErrUuidValidate = Const("неверно указан Uuid объекта")
 
-	MsgUnauthorized = "не авторизованный доступ"
+	MsgUnauthorized = "неавторизованный доступ"
 	ErrUnauthorized = Const(MsgUnauthorized)
 	ErrInvalidToken = Const("некорректный токен")
 
