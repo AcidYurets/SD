@@ -1,0 +1,20 @@
+version: '3.3'
+
+services:
+  calend:
+    build: .
+    container_name: app-calend
+    ports:
+      - "4040:4040"
+    env_file:
+      - .env
+
+  postgres:
+    image: postgres:13
+    container_name: postgres-calend
+    environment:
+      POSTGRES_PASSWORD: passw0rd
+      PG_PASSWORD: passw0rd
+      POSTGRES_DB: server_db
+    ports:
+      - "5432:5432"

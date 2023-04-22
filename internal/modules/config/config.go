@@ -2,6 +2,7 @@ package config
 
 import (
 	"calend/internal/modules/app"
+	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"time"
 )
@@ -27,22 +28,16 @@ type Config struct {
 }
 
 func NewConfig(app app.App, logger *zap.Logger, logLevel zap.AtomicLevel) (Config, error) {
-	config := Config{
-		DBDriver:     "postgres",
-		DBConnString: "host=localhost port=5432 user=postgres dbname=server_db password=passw0rd sslmode=disable",
-
-		HTTPServerHost: "localhost",
-		HTTPServerPort: "4040",
-
-		AutoMigrate:      true,
-		TraceSQLCommands: true,
-		Secret:           "123",
+	var config Config
+	err := envconfig.Process("", &config)
+	if err != nil {
+		return Config{}, err
 	}
 
 	logger.Info("получена конфигурация", zap.Any("config", config))
 
 	// Принудительно инициализируем уровень логирования из конфигурации
-	err := logLevel.UnmarshalText([]byte(config.LogLevel))
+	err = logLevel.UnmarshalText([]byte(config.LogLevel))
 	if err != nil {
 		return Config{}, err
 	}

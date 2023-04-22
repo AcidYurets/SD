@@ -2,6 +2,15 @@
   <configuration default="false" name="console" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="main_project" />
     <working_directory value="$PROJECT_DIR$" />
+    <envs>
+      <env name="DB_CONN_STRING" value="host=localhost port=5432 user=postgres dbname=server_db password=passw0rd sslmode=disable" />
+      <env name="DB_DRIVER" value="postgres" />
+      <env name="SECRET" value="123" />
+      <env name="HTTP_SERVER_HOST" value="localhost" />
+      <env name="HTTP_SERVER_PORT" value="4040" />
+      <env name="AUTO_MIGRATE" value="true" />
+      <env name="TRACE_SQL_COMMANDS" value="true" />
+    </envs>
     <EXTENSION ID="software.aws.toolkits.jetbrains.core.execution.GoAwsConnectionRunConfigurationExtension">
       <option name="credential" />
       <option name="region" />

@@ -20,6 +20,11 @@ func connectDB(cfg config.Config, logger *zap.Logger) (*ent.Client, error) {
 		return nil, fmt.Errorf("ошибка при подключении к БД: %w", err)
 	}
 
+	err = db.DB().Ping()
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при подключении к БД: %w", err)
+	}
+
 	logLevel := trace_driver.Warn
 	if cfg.TraceSQLCommands {
 		logLevel = trace_driver.Info
