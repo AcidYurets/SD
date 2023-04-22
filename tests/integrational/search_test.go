@@ -87,11 +87,11 @@ func searchServiceTest(t *testing.T, service *service.SearchService, eventServic
 		IsWholeDay:  false,
 		TagUuids:    []string{tag1.Uuid},
 	}
-	newInvs := dto.CreateEventInvitations{{
+	newInvs := dto.CreateInvitations{{
 		UserUuid:        currentUser2.Uuid,
 		AccessRightCode: "r",
 	}}
-	_, err = eventService.CreateWithInvitations(ctx1, newEvent, newInvs)
+	_, err = eventService.Create(ctx1, newEvent, newInvs)
 	assert.NoError(t, err)
 	if err != nil {
 		return

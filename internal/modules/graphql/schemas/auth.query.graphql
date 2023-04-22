@@ -7,3 +7,14 @@ input UserCredentials @goModel(model: "calend/internal/modules/domain/auth/dto.U
     Login: String!
     Password: String!
 }
+
+extend type Mutation {
+    SingUp(newUser: NewUser!): User!
+}
+
+input NewUser @goModel(model: "calend/internal/modules/domain/auth/dto.NewUser") {
+    Login: String!
+    Password: String!
+    Phone: String!
+}
+

@@ -1,0 +1,21 @@
+extend type Query {
+    Tag(id: ID!): Tag!
+    Tags: [Tag!]!
+}
+
+extend type Mutation {
+    TagCreate(tag: CreateTag!): Tag!
+    TagUpdate(id: ID!, tag: UpdateTag!): Tag!
+    TagDelete(id: ID!): ID!
+    TagRestore(id: ID!): Tag!
+}
+
+input CreateTag @goModel(model: "calend/internal/modules/domain/tag/dto.CreateTag") {
+    Name: String!
+    Description: String!
+}
+
+input UpdateTag @goModel(model: "calend/internal/modules/domain/tag/dto.UpdateTag") {
+    Name: String!
+    Description: String!
+}

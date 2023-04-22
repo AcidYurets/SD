@@ -72,7 +72,7 @@ func (r *EventService) ListTagsByEventUuid(ctx context.Context, uuid string) (ta
 //  1. события, которые он создал;
 //  2. события, к которым он приглашен.
 func (r *EventService) ListAvailable(ctx context.Context) (dto.Events, error) {
-	userUuid, err := getUserUuidFromCtx(ctx)
+	userUuid, err := session.GetUserUuidFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -80,8 +80,8 @@ func (r *EventService) ListAvailable(ctx context.Context) (dto.Events, error) {
 	return r.eventRepo.ListAvailable(ctx, userUuid)
 }
 
-func (r *EventService) CreateWithInvitations(ctx context.Context, newEvent *dto.CreateEvent, newInvs dto.CreateEventInvitations) (*dto.Event, error) {
-	userUuid, err := getUserUuidFromCtx(ctx)
+func (r *EventService) Create(ctx context.Context, newEvent *dto.CreateEvent, newInvs dto.CreateInvitations) (*dto.Event, error) {
+	userUuid, err := session.GetUserUuidFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -95,18 +95,12 @@ func (r *EventService) CreateWithInvitations(ctx context.Context, newEvent *dto.
 		return nil, fmt.Errorf("ошибка при создании события: %w", err)
 	}
 
-	var createInvs dto.CreateInvitations
 	for _, inv := range newInvs {
-		createInv := &dto.CreateInvitation{
-			EventUuid:       createdEvent.Uuid,
-			UserUuid:        inv.UserUuid,
-			AccessRightCode: inv.AccessRightCode,
-		}
-		createInvs = append(createInvs, createInv)
+		inv.EventUuid = createdEvent.Uuid
 	}
 
 	// Создаем приглашения для события
-	_, err = r.invRepo.CreateBulk(ctx, createInvs)
+	_, err = r.invRepo.CreateBulk(ctx, newInvs)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при создании приглашений: %w", err)
 	}
@@ -120,23 +114,17 @@ func (r *EventService) CreateWithInvitations(ctx context.Context, newEvent *dto.
 	return eventWithInvs, nil
 }
 
-func (r *EventService) AddInvitations(ctx context.Context, uuid string, newInvs dto.CreateEventInvitations) (*dto.Event, error) {
+func (r *EventService) AddInvitations(ctx context.Context, uuid string, newInvs dto.CreateInvitations) (*dto.Event, error) {
 	if err := r.checkAvailable(ctx, uuid, access.InviteAccess); err != nil {
 		return nil, err
 	}
 
-	var createInvs dto.CreateInvitations
 	for _, inv := range newInvs {
-		createInv := &dto.CreateInvitation{
-			EventUuid:       uuid,
-			UserUuid:        inv.UserUuid,
-			AccessRightCode: inv.AccessRightCode,
-		}
-		createInvs = append(createInvs, createInv)
+		inv.EventUuid = uuid
 	}
 
 	// Создаем приглашения для события
-	if _, err := r.invRepo.CreateBulk(ctx, createInvs); err != nil {
+	if _, err := r.invRepo.CreateBulk(ctx, newInvs); err != nil {
 		return nil, fmt.Errorf("ошибка при создании приглашений: %w", err)
 	}
 
@@ -149,7 +137,7 @@ func (r *EventService) AddInvitations(ctx context.Context, uuid string, newInvs 
 	return eventWithInvs, nil
 }
 
-func (r *EventService) Update(ctx context.Context, uuid string, updEvent *dto.UpdateEvent, newInvs dto.CreateEventInvitations) (*dto.Event, error) {
+func (r *EventService) Update(ctx context.Context, uuid string, updEvent *dto.UpdateEvent, newInvs dto.CreateInvitations) (*dto.Event, error) {
 	if err := r.checkAvailable(ctx, uuid, access.UpdateAccess); err != nil {
 		return nil, err
 	}
@@ -164,18 +152,12 @@ func (r *EventService) Update(ctx context.Context, uuid string, updEvent *dto.Up
 		return nil, fmt.Errorf("ошибка при удалении приглашений: %w", err)
 	}
 
-	var createInvs dto.CreateInvitations
 	for _, inv := range newInvs {
-		createInv := &dto.CreateInvitation{
-			EventUuid:       uuid,
-			UserUuid:        inv.UserUuid,
-			AccessRightCode: inv.AccessRightCode,
-		}
-		createInvs = append(createInvs, createInv)
+		inv.EventUuid = uuid
 	}
 
 	// Создаем обновленные приглашения для события
-	if _, err := r.invRepo.CreateBulk(ctx, createInvs); err != nil {
+	if _, err := r.invRepo.CreateBulk(ctx, newInvs); err != nil {
 		return nil, fmt.Errorf("ошибка при создании приглашений: %w", err)
 	}
 
@@ -207,7 +189,7 @@ func (r *EventService) Delete(ctx context.Context, uuid string) error {
 }
 
 func (r *EventService) checkAvailable(ctx context.Context, eventUuid string, opCode access.Type) error {
-	userUuid, err := getUserUuidFromCtx(ctx)
+	userUuid, err := session.GetUserUuidFromCtx(ctx)
 	if err != nil {
 		return err
 	}
@@ -243,13 +225,4 @@ func (r *EventService) checkAvailable(ctx context.Context, eventUuid string, opC
 	}
 
 	return fmt.Errorf("%w: код операции = <%s>", err_const.ErrAccessDenied, opCode)
-}
-
-func getUserUuidFromCtx(ctx context.Context) (string, error) {
-	s, ok := session.GetSessionFromCtx(ctx)
-	if !ok {
-		return "", fmt.Errorf("cессия отсутствует в контексте")
-	}
-
-	return s.UserUuid, nil
 }

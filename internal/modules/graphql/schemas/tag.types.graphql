@@ -1,0 +1,5 @@
+type Tag @goModel(model: "calend/internal/modules/domain/tag/dto.Tag") {
+    Uuid: ID!
+    Name: String!
+    Description: String!
+}

@@ -1,0 +1,36 @@
+extend type Query {
+    Event(id: ID!): Event!
+    EventsAvailable: [Event!]!
+}
+
+extend type Mutation {
+    EventCreate(event: CreateEvent!, invitations: [CreateInvitation!]): Event!
+    EventAddInvitations(id: ID!, invitations: [CreateInvitation!]): Event!
+    EventUpdate(id: ID!, event: UpdateEvent!, invitations: [CreateInvitation!]): Event!
+    EventDelete(id: ID!): ID!
+}
+
+
+input CreateEvent @goModel(model: "calend/internal/modules/domain/event/dto.CreateEvent") {
+    Timestamp: DateTime!
+    Name: String!
+    Description: String
+    Type: String!
+    IsWholeDay: Boolean!
+    TagUuids: [ID!]
+}
+
+input UpdateEvent @goModel(model: "calend/internal/modules/domain/event/dto.UpdateEvent") {
+    Timestamp: DateTime!
+    Name: String!
+    Description: String
+    Type: String!
+    IsWholeDay: Boolean!
+    TagUuids: [ID!]
+}
+
+input CreateInvitation @goModel(model: "calend/internal/modules/domain/event/dto.CreateInvitation") {
+    UserUuid: ID!
+    AccessRightCode: AccessRightCode!
+}
+

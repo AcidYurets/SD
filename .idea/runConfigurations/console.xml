@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="server" type="GoApplicationRunConfiguration" factoryName="Go Application">
+  <configuration default="false" name="console" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="main_project" />
     <working_directory value="$PROJECT_DIR$" />
     <EXTENSION ID="software.aws.toolkits.jetbrains.core.execution.GoAwsConnectionRunConfigurationExtension">
@@ -8,9 +8,9 @@
       <option name="useCurrentConnection" value="false" />
     </EXTENSION>
     <kind value="PACKAGE" />
-    <package value="calend/cmd/server" />
+    <package value="calend/cmd/console_app" />
     <directory value="$PROJECT_DIR$" />
-    <filePath value="$PROJECT_DIR$/cmd/server/main.go" />
+    <filePath value="$PROJECT_DIR$" />
     <method v="2" />
   </configuration>
 </component>

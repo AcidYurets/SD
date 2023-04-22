@@ -30,8 +30,8 @@ func execTests(
 	tagService *tag_serv.TagService,
 	authService *auth_serv.AuthService,
 	arService *ar_serv.AccessRightService,
-	eventService *event_serv.EventService,
 	searchService *search_serv.SearchService,
+	eventService *event_serv.EventService,
 
 	client *ent.Client,
 	lifecycle fx.Lifecycle,
@@ -41,11 +41,11 @@ func execTests(
 		OnStart: func(ctx context.Context) error {
 			go func() {
 				searchServiceTest(t, searchService, eventService, tagService, authService, client)
-				eventServiceTest(t, eventService, tagService, authService, client)
 				authServiceTest(t, userService, authService, client)
 				userServiceTest(t, userService, authService, client)
 				tagServiceTest(t, tagService, authService, client)
 				accessRightServiceTest(t, arService, authService, client)
+				eventServiceTest(t, eventService, tagService, authService, client)
 
 				_ = shutdowner.Shutdown()
 			}()

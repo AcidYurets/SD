@@ -2,6 +2,7 @@ package session
 
 import (
 	"context"
+	"fmt"
 )
 
 // Session сессия пользователя
@@ -19,4 +20,13 @@ func GetSessionFromCtx(ctx context.Context) (session Session, ok bool) {
 
 func SetSessionToCtx(ctx context.Context, session Session) context.Context {
 	return context.WithValue(ctx, sessionCtx{}, session)
+}
+
+func GetUserUuidFromCtx(ctx context.Context) (string, error) {
+	s, ok := GetSessionFromCtx(ctx)
+	if !ok {
+		return "", fmt.Errorf("cессия отсутствует в контексте")
+	}
+
+	return s.UserUuid, nil
 }

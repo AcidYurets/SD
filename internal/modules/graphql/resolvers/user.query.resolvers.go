@@ -9,9 +9,29 @@ import (
 	"context"
 )
 
+// UserUpdateSelf is the resolver for the UserUpdateSelf field.
+func (r *mutationResolver) UserUpdateSelf(ctx context.Context, updateUser dto.UpdateUser) (*dto.User, error) {
+	user, err := r.userService.UpdateSelf(ctx, &updateUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 // User is the resolver for the User field.
 func (r *queryResolver) User(ctx context.Context, id string) (*dto.User, error) {
 	user, err := r.userService.GetByUuid(ctx, id)
 
 	return user, err
+}
+
+// Users is the resolver for the Users field.
+func (r *queryResolver) Users(ctx context.Context) ([]*dto.User, error) {
+	users, err := r.userService.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }

@@ -14,7 +14,7 @@ import (
 	"unicode"
 )
 
-const AccessTokenLiveTime = 30
+const AccessTokenLiveTime = 30000 // TODO: Уменьшить
 const RefreshTokenLiveTime = 360
 
 //go:generate mockgen -destination mock_test.go -package service . IUserRepo

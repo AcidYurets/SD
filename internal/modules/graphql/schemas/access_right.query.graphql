@@ -1,0 +1,4 @@
+extend type Query {
+    AccessRight(code: AccessRightCode!): AccessRight!
+    AccessRights: [AccessRight!]!
+}

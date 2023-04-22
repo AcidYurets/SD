@@ -11,12 +11,6 @@ type DateQueryFilter struct {
 	From *time.Time
 	// Окончание периода
 	To *time.Time
-	// Зона времени
-	TimeZone *string
-	// Включает нижнюю границу
-	IncludeLower *bool
-	// Включает верхнюю границу
-	IncludeUpper *bool
 }
 
 func (f *DateQueryFilter) Build(field string, b Builder) {

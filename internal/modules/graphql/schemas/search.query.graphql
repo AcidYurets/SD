@@ -1,0 +1,39 @@
+extend type Query {
+    SearchEvent(paginate: PaginationInput!, filter: EventFilter, sort: EventSort): [Event!]!
+}
+
+input EventFilter @goModel(model: "calend/internal/modules/domain/search/dto.EventFilter") {
+    "Полнотекстовый поиск по всем полям"
+    FTSearchStr: FTSearchFilterInput
+
+    "Поиск по временной метке"
+    Timestamp: DateFilterInput
+    "Поиск по названию"
+    Name: TextFilterInput
+    "Поиск по описанию"
+    Description: TextFilterInput
+    "Поиск по типу"
+    Type: TextFilterInput
+    "Поиск по признаку полного дня"
+    IsWholeDay: BoolFilterInput
+    "Поиск по Uuid создателя"
+    CreatorUuid: IDFilterInput
+
+    "Поиск по логину создателя"
+    CreatorLogin: TextFilterInput
+    "Поиск по названию тегов"
+    TagName: TextFilterInput
+}
+
+input EventSort @goModel(model: "calend/internal/modules/domain/search/dto.EventSort") {
+    "По временной метке"
+    Timestamp: SortDirection
+    "По названию"
+    Name: SortDirection
+    "По описанию"
+    Description: SortDirection
+    "По типу"
+    Type: SortDirection
+    "По имени создателя"
+    CreatorLogin: SortDirection
+}

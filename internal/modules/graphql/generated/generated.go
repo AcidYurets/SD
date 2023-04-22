@@ -4,15 +4,24 @@ package generated
 
 import (
 	"bytes"
+	"calend/internal/models/access"
 	"calend/internal/models/session"
-	"calend/internal/modules/domain/auth/dto"
-	dto1 "calend/internal/modules/domain/user/dto"
+	dto5 "calend/internal/modules/domain/access_right/dto"
+	dto1 "calend/internal/modules/domain/auth/dto"
+	"calend/internal/modules/domain/event/dto"
+	dto4 "calend/internal/modules/domain/search/dto"
+	dto2 "calend/internal/modules/domain/tag/dto"
+	dto3 "calend/internal/modules/domain/user/dto"
+	"calend/internal/pkg/search/filter"
+	"calend/internal/pkg/search/paginate"
+	"calend/internal/pkg/search/sort"
 	"context"
 	"errors"
 	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -38,6 +47,8 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Event() EventResolver
+	Invitation() InvitationResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 	Session() SessionResolver
@@ -47,6 +58,29 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AccessRight struct {
+		Code        func(childComplexity int) int
+		Description func(childComplexity int) int
+	}
+
+	Event struct {
+		Creator     func(childComplexity int) int
+		Description func(childComplexity int) int
+		Invitations func(childComplexity int) int
+		IsWholeDay  func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Tags        func(childComplexity int) int
+		Timestamp   func(childComplexity int) int
+		Type        func(childComplexity int) int
+		Uuid        func(childComplexity int) int
+	}
+
+	Invitation struct {
+		AccessRight func(childComplexity int) int
+		User        func(childComplexity int) int
+		Uuid        func(childComplexity int) int
+	}
+
 	JWT struct {
 		AccessToken  func(childComplexity int) int
 		RefreshToken func(childComplexity int) int
@@ -54,20 +88,43 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		Ping   func(childComplexity int) int
-		SingUp func(childComplexity int, newUser dto.NewUser) int
+		EventAddInvitations func(childComplexity int, id string, invitations []*dto.CreateInvitation) int
+		EventCreate         func(childComplexity int, event dto.CreateEvent, invitations []*dto.CreateInvitation) int
+		EventDelete         func(childComplexity int, id string) int
+		EventUpdate         func(childComplexity int, id string, event dto.UpdateEvent, invitations []*dto.CreateInvitation) int
+		Ping                func(childComplexity int) int
+		SingUp              func(childComplexity int, newUser dto1.NewUser) int
+		TagCreate           func(childComplexity int, tag dto2.CreateTag) int
+		TagDelete           func(childComplexity int, id string) int
+		TagRestore          func(childComplexity int, id string) int
+		TagUpdate           func(childComplexity int, id string, tag dto2.UpdateTag) int
+		UserUpdateSelf      func(childComplexity int, updateUser dto3.UpdateUser) int
 	}
 
 	Query struct {
-		Login        func(childComplexity int, credentials dto.UserCredentials) int
-		Ping         func(childComplexity int) int
-		RefreshToken func(childComplexity int, refreshToken string) int
-		User         func(childComplexity int, id string) int
+		AccessRight     func(childComplexity int, code access.Type) int
+		AccessRights    func(childComplexity int) int
+		Event           func(childComplexity int, id string) int
+		EventsAvailable func(childComplexity int) int
+		Login           func(childComplexity int, credentials dto1.UserCredentials) int
+		Ping            func(childComplexity int) int
+		RefreshToken    func(childComplexity int, refreshToken string) int
+		SearchEvent     func(childComplexity int, paginate paginate.ByPage, filter *dto4.EventFilter, sort *dto4.EventSort) int
+		Tag             func(childComplexity int, id string) int
+		Tags            func(childComplexity int) int
+		User            func(childComplexity int, id string) int
+		Users           func(childComplexity int) int
 	}
 
 	Session struct {
 		SID  func(childComplexity int) int
 		User func(childComplexity int) int
+	}
+
+	Tag struct {
+		Description func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Uuid        func(childComplexity int) int
 	}
 
 	Tokens struct {
@@ -82,18 +139,44 @@ type ComplexityRoot struct {
 	}
 }
 
+type EventResolver interface {
+	Tags(ctx context.Context, obj *dto.Event) ([]*dto2.Tag, error)
+
+	Creator(ctx context.Context, obj *dto.Event) (*dto3.User, error)
+}
+type InvitationResolver interface {
+	User(ctx context.Context, obj *dto.Invitation) (*dto3.User, error)
+	AccessRight(ctx context.Context, obj *dto.Invitation) (*dto5.AccessRight, error)
+}
 type MutationResolver interface {
 	Ping(ctx context.Context) (string, error)
-	SingUp(ctx context.Context, newUser dto.NewUser) (*dto1.User, error)
+	SingUp(ctx context.Context, newUser dto1.NewUser) (*dto3.User, error)
+	EventCreate(ctx context.Context, event dto.CreateEvent, invitations []*dto.CreateInvitation) (*dto.Event, error)
+	EventAddInvitations(ctx context.Context, id string, invitations []*dto.CreateInvitation) (*dto.Event, error)
+	EventUpdate(ctx context.Context, id string, event dto.UpdateEvent, invitations []*dto.CreateInvitation) (*dto.Event, error)
+	EventDelete(ctx context.Context, id string) (string, error)
+	TagCreate(ctx context.Context, tag dto2.CreateTag) (*dto2.Tag, error)
+	TagUpdate(ctx context.Context, id string, tag dto2.UpdateTag) (*dto2.Tag, error)
+	TagDelete(ctx context.Context, id string) (string, error)
+	TagRestore(ctx context.Context, id string) (*dto2.Tag, error)
+	UserUpdateSelf(ctx context.Context, updateUser dto3.UpdateUser) (*dto3.User, error)
 }
 type QueryResolver interface {
 	Ping(ctx context.Context) (string, error)
-	Login(ctx context.Context, credentials dto.UserCredentials) (*dto.JWT, error)
-	RefreshToken(ctx context.Context, refreshToken string) (*dto.Tokens, error)
-	User(ctx context.Context, id string) (*dto1.User, error)
+	AccessRight(ctx context.Context, code access.Type) (*dto5.AccessRight, error)
+	AccessRights(ctx context.Context) ([]*dto5.AccessRight, error)
+	Login(ctx context.Context, credentials dto1.UserCredentials) (*dto1.JWT, error)
+	RefreshToken(ctx context.Context, refreshToken string) (*dto1.Tokens, error)
+	Event(ctx context.Context, id string) (*dto.Event, error)
+	EventsAvailable(ctx context.Context) ([]*dto.Event, error)
+	SearchEvent(ctx context.Context, paginate paginate.ByPage, filter *dto4.EventFilter, sort *dto4.EventSort) ([]*dto.Event, error)
+	Tag(ctx context.Context, id string) (*dto2.Tag, error)
+	Tags(ctx context.Context) ([]*dto2.Tag, error)
+	User(ctx context.Context, id string) (*dto3.User, error)
+	Users(ctx context.Context) ([]*dto3.User, error)
 }
 type SessionResolver interface {
-	User(ctx context.Context, obj *session.Session) (*dto1.User, error)
+	User(ctx context.Context, obj *session.Session) (*dto3.User, error)
 }
 
 type executableSchema struct {
@@ -110,6 +193,104 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AccessRight.Code":
+		if e.complexity.AccessRight.Code == nil {
+			break
+		}
+
+		return e.complexity.AccessRight.Code(childComplexity), true
+
+	case "AccessRight.Description":
+		if e.complexity.AccessRight.Description == nil {
+			break
+		}
+
+		return e.complexity.AccessRight.Description(childComplexity), true
+
+	case "Event.Creator":
+		if e.complexity.Event.Creator == nil {
+			break
+		}
+
+		return e.complexity.Event.Creator(childComplexity), true
+
+	case "Event.Description":
+		if e.complexity.Event.Description == nil {
+			break
+		}
+
+		return e.complexity.Event.Description(childComplexity), true
+
+	case "Event.Invitations":
+		if e.complexity.Event.Invitations == nil {
+			break
+		}
+
+		return e.complexity.Event.Invitations(childComplexity), true
+
+	case "Event.IsWholeDay":
+		if e.complexity.Event.IsWholeDay == nil {
+			break
+		}
+
+		return e.complexity.Event.IsWholeDay(childComplexity), true
+
+	case "Event.Name":
+		if e.complexity.Event.Name == nil {
+			break
+		}
+
+		return e.complexity.Event.Name(childComplexity), true
+
+	case "Event.Tags":
+		if e.complexity.Event.Tags == nil {
+			break
+		}
+
+		return e.complexity.Event.Tags(childComplexity), true
+
+	case "Event.Timestamp":
+		if e.complexity.Event.Timestamp == nil {
+			break
+		}
+
+		return e.complexity.Event.Timestamp(childComplexity), true
+
+	case "Event.Type":
+		if e.complexity.Event.Type == nil {
+			break
+		}
+
+		return e.complexity.Event.Type(childComplexity), true
+
+	case "Event.Uuid":
+		if e.complexity.Event.Uuid == nil {
+			break
+		}
+
+		return e.complexity.Event.Uuid(childComplexity), true
+
+	case "Invitation.AccessRight":
+		if e.complexity.Invitation.AccessRight == nil {
+			break
+		}
+
+		return e.complexity.Invitation.AccessRight(childComplexity), true
+
+	case "Invitation.User":
+		if e.complexity.Invitation.User == nil {
+			break
+		}
+
+		return e.complexity.Invitation.User(childComplexity), true
+
+	case "Invitation.Uuid":
+		if e.complexity.Invitation.Uuid == nil {
+			break
+		}
+
+		return e.complexity.Invitation.Uuid(childComplexity), true
 
 	case "JWT.AccessToken":
 		if e.complexity.JWT.AccessToken == nil {
@@ -132,6 +313,54 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.JWT.Session(childComplexity), true
 
+	case "Mutation.EventAddInvitations":
+		if e.complexity.Mutation.EventAddInvitations == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_EventAddInvitations_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EventAddInvitations(childComplexity, args["id"].(string), args["invitations"].([]*dto.CreateInvitation)), true
+
+	case "Mutation.EventCreate":
+		if e.complexity.Mutation.EventCreate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_EventCreate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EventCreate(childComplexity, args["event"].(dto.CreateEvent), args["invitations"].([]*dto.CreateInvitation)), true
+
+	case "Mutation.EventDelete":
+		if e.complexity.Mutation.EventDelete == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_EventDelete_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EventDelete(childComplexity, args["id"].(string)), true
+
+	case "Mutation.EventUpdate":
+		if e.complexity.Mutation.EventUpdate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_EventUpdate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EventUpdate(childComplexity, args["id"].(string), args["event"].(dto.UpdateEvent), args["invitations"].([]*dto.CreateInvitation)), true
+
 	case "Mutation.ping":
 		if e.complexity.Mutation.Ping == nil {
 			break
@@ -149,7 +378,105 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SingUp(childComplexity, args["newUser"].(dto.NewUser)), true
+		return e.complexity.Mutation.SingUp(childComplexity, args["newUser"].(dto1.NewUser)), true
+
+	case "Mutation.TagCreate":
+		if e.complexity.Mutation.TagCreate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_TagCreate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.TagCreate(childComplexity, args["tag"].(dto2.CreateTag)), true
+
+	case "Mutation.TagDelete":
+		if e.complexity.Mutation.TagDelete == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_TagDelete_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.TagDelete(childComplexity, args["id"].(string)), true
+
+	case "Mutation.TagRestore":
+		if e.complexity.Mutation.TagRestore == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_TagRestore_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.TagRestore(childComplexity, args["id"].(string)), true
+
+	case "Mutation.TagUpdate":
+		if e.complexity.Mutation.TagUpdate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_TagUpdate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.TagUpdate(childComplexity, args["id"].(string), args["tag"].(dto2.UpdateTag)), true
+
+	case "Mutation.UserUpdateSelf":
+		if e.complexity.Mutation.UserUpdateSelf == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_UserUpdateSelf_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UserUpdateSelf(childComplexity, args["updateUser"].(dto3.UpdateUser)), true
+
+	case "Query.AccessRight":
+		if e.complexity.Query.AccessRight == nil {
+			break
+		}
+
+		args, err := ec.field_Query_AccessRight_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.AccessRight(childComplexity, args["code"].(access.Type)), true
+
+	case "Query.AccessRights":
+		if e.complexity.Query.AccessRights == nil {
+			break
+		}
+
+		return e.complexity.Query.AccessRights(childComplexity), true
+
+	case "Query.Event":
+		if e.complexity.Query.Event == nil {
+			break
+		}
+
+		args, err := ec.field_Query_Event_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Event(childComplexity, args["id"].(string)), true
+
+	case "Query.EventsAvailable":
+		if e.complexity.Query.EventsAvailable == nil {
+			break
+		}
+
+		return e.complexity.Query.EventsAvailable(childComplexity), true
 
 	case "Query.Login":
 		if e.complexity.Query.Login == nil {
@@ -161,7 +488,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Login(childComplexity, args["credentials"].(dto.UserCredentials)), true
+		return e.complexity.Query.Login(childComplexity, args["credentials"].(dto1.UserCredentials)), true
 
 	case "Query.ping":
 		if e.complexity.Query.Ping == nil {
@@ -182,6 +509,37 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.RefreshToken(childComplexity, args["refreshToken"].(string)), true
 
+	case "Query.SearchEvent":
+		if e.complexity.Query.SearchEvent == nil {
+			break
+		}
+
+		args, err := ec.field_Query_SearchEvent_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SearchEvent(childComplexity, args["paginate"].(paginate.ByPage), args["filter"].(*dto4.EventFilter), args["sort"].(*dto4.EventSort)), true
+
+	case "Query.Tag":
+		if e.complexity.Query.Tag == nil {
+			break
+		}
+
+		args, err := ec.field_Query_Tag_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Tag(childComplexity, args["id"].(string)), true
+
+	case "Query.Tags":
+		if e.complexity.Query.Tags == nil {
+			break
+		}
+
+		return e.complexity.Query.Tags(childComplexity), true
+
 	case "Query.User":
 		if e.complexity.Query.User == nil {
 			break
@@ -193,6 +551,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.User(childComplexity, args["id"].(string)), true
+
+	case "Query.Users":
+		if e.complexity.Query.Users == nil {
+			break
+		}
+
+		return e.complexity.Query.Users(childComplexity), true
 
 	case "Session.SID":
 		if e.complexity.Session.SID == nil {
@@ -207,6 +572,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Session.User(childComplexity), true
+
+	case "Tag.Description":
+		if e.complexity.Tag.Description == nil {
+			break
+		}
+
+		return e.complexity.Tag.Description(childComplexity), true
+
+	case "Tag.Name":
+		if e.complexity.Tag.Name == nil {
+			break
+		}
+
+		return e.complexity.Tag.Name(childComplexity), true
+
+	case "Tag.Uuid":
+		if e.complexity.Tag.Uuid == nil {
+			break
+		}
+
+		return e.complexity.Tag.Uuid(childComplexity), true
 
 	case "Tokens.AccessToken":
 		if e.complexity.Tokens.AccessToken == nil {
@@ -251,7 +637,21 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputBoolFilterInput,
+		ec.unmarshalInputCreateEvent,
+		ec.unmarshalInputCreateInvitation,
+		ec.unmarshalInputCreateTag,
+		ec.unmarshalInputDateFilterInput,
+		ec.unmarshalInputEventFilter,
+		ec.unmarshalInputEventSort,
+		ec.unmarshalInputFTSearchFilterInput,
+		ec.unmarshalInputIDFilterInput,
 		ec.unmarshalInputNewUser,
+		ec.unmarshalInputPaginationInput,
+		ec.unmarshalInputTextFilterInput,
+		ec.unmarshalInputUpdateEvent,
+		ec.unmarshalInputUpdateTag,
+		ec.unmarshalInputUpdateUser,
 		ec.unmarshalInputUserCredentials,
 	)
 	first := true
@@ -313,16 +713,22 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "../schemas/auth.mutation.graphql", Input: `extend type Mutation {
-    SingUp(newUser: NewUser!): User!
+	{Name: "../schemas/access_right.query.graphql", Input: `extend type Query {
+    AccessRight(code: AccessRightCode!): AccessRight!
+    AccessRights: [AccessRight!]!
+}
+`, BuiltIn: false},
+	{Name: "../schemas/access_right.types.graphql", Input: `type AccessRight @goModel(model: "calend/internal/modules/domain/access_right/dto.AccessRight") {
+    Code: AccessRightCode!
+    Description: String!
 }
 
-input NewUser @goModel(model: "calend/internal/modules/domain/auth/dto.NewUser") {
-    Login: String!
-    Password: String!
-    Phone: String!
+enum AccessRightCode @goModel(model: "calend/internal/models/access.Type") {
+    r
+    ri
+    riu
+    riud
 }
-
 `, BuiltIn: false},
 	{Name: "../schemas/auth.query.graphql", Input: `extend type Query {
     Login(credentials: UserCredentials!): JWT!
@@ -333,6 +739,17 @@ input UserCredentials @goModel(model: "calend/internal/modules/domain/auth/dto.U
     Login: String!
     Password: String!
 }
+
+extend type Mutation {
+    SingUp(newUser: NewUser!): User!
+}
+
+input NewUser @goModel(model: "calend/internal/modules/domain/auth/dto.NewUser") {
+    Login: String!
+    Password: String!
+    Phone: String!
+}
+
 `, BuiltIn: false},
 	{Name: "../schemas/auth.types.graphql", Input: `type Tokens @goModel(model: "calend/internal/modules/domain/auth/dto.Tokens") {
     AccessToken: String!
@@ -365,19 +782,209 @@ directive @goTag(
     value: String
 ) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
 `, BuiltIn: false},
+	{Name: "../schemas/event.query.graphql", Input: `extend type Query {
+    Event(id: ID!): Event!
+    EventsAvailable: [Event!]!
+}
+
+extend type Mutation {
+    EventCreate(event: CreateEvent!, invitations: [CreateInvitation!]): Event!
+    EventAddInvitations(id: ID!, invitations: [CreateInvitation!]): Event!
+    EventUpdate(id: ID!, event: UpdateEvent!, invitations: [CreateInvitation!]): Event!
+    EventDelete(id: ID!): ID!
+}
+
+
+input CreateEvent @goModel(model: "calend/internal/modules/domain/event/dto.CreateEvent") {
+    Timestamp: DateTime!
+    Name: String!
+    Description: String
+    Type: String!
+    IsWholeDay: Boolean!
+    TagUuids: [ID!]
+}
+
+input UpdateEvent @goModel(model: "calend/internal/modules/domain/event/dto.UpdateEvent") {
+    Timestamp: DateTime!
+    Name: String!
+    Description: String
+    Type: String!
+    IsWholeDay: Boolean!
+    TagUuids: [ID!]
+}
+
+input CreateInvitation @goModel(model: "calend/internal/modules/domain/event/dto.CreateInvitation") {
+    UserUuid: ID!
+    AccessRightCode: AccessRightCode!
+}
+
+`, BuiltIn: false},
+	{Name: "../schemas/event.types.graphql", Input: `type Event @goModel(model: "calend/internal/modules/domain/event/dto.Event") {
+    Uuid: ID!
+    Timestamp: DateTime!
+    Name: String!
+    Description: String!
+    Type: String!
+    IsWholeDay: Boolean!
+    Tags: [Tag!]!
+    Invitations: [Invitation!]!
+    Creator: User!
+}
+
+type Invitation @goModel(model: "calend/internal/modules/domain/event/dto.Invitation") {
+    Uuid: ID!
+    User: User!
+    AccessRight: AccessRight!
+}`, BuiltIn: false},
+	{Name: "../schemas/search.inputs.graphql", Input: `input DateFilterInput @goModel(model: "calend/internal/pkg/search/filter.DateQueryFilter"){
+    "По полному совпадению значения"
+    Eq : DateTime
+    "Начало периода"
+    From : DateTime
+    "Окончание периода"
+    To : DateTime
+}
+
+
+input FTSearchFilterInput @goModel(model: "calend/internal/pkg/search/filter.FTSQueryFilter") {
+    Str: String!
+}
+
+input IDFilterInput @goModel(model: "calend/internal/pkg/search/filter.IDQueryFilter") {
+    "По полному совпадению значения"
+    Eq: ID
+    "По вхождению в массив значения"
+    In: [ID!]
+    "По не вхождению в массив значения"
+    Nin: [ID!]
+}
+
+input TextFilterInput @goModel(model: "calend/internal/pkg/search/filter.TextQueryFilter"){
+    "Полнотекстовый поиск"
+    Ts: String
+    "По полному совпадению значения"
+    Eq: String
+    "По вхождению в массив значения"
+    In: [String!]
+    "По не вхождению в массив значения"
+    Nin: [String!]
+}
+
+input BoolFilterInput @goModel(model: "calend/internal/pkg/search/filter.BoolQueryFilter") {
+    "По полному совпадению значения"
+    Eq: Boolean
+}
+
+
+enum SortDirection @goModel(model: "calend/internal/pkg/search/sort.Direction") {
+    ASC
+    DESC
+}
+
+"Постраничная выборка данных"
+input PaginationInput @goModel(model: "calend/internal/pkg/search/paginate.ByPage")  {
+    "Номер Страница"
+    Page: Int!
+    "Размер страницы"
+    PageSize: Int!
+}
+
+
+
+
+`, BuiltIn: false},
+	{Name: "../schemas/search.query.graphql", Input: `extend type Query {
+    SearchEvent(paginate: PaginationInput!, filter: EventFilter, sort: EventSort): [Event!]!
+}
+
+input EventFilter @goModel(model: "calend/internal/modules/domain/search/dto.EventFilter") {
+    "Полнотекстовый поиск по всем полям"
+    FTSearchStr: FTSearchFilterInput
+
+    "Поиск по временной метке"
+    Timestamp: DateFilterInput
+    "Поиск по названию"
+    Name: TextFilterInput
+    "Поиск по описанию"
+    Description: TextFilterInput
+    "Поиск по типу"
+    Type: TextFilterInput
+    "Поиск по признаку полного дня"
+    IsWholeDay: BoolFilterInput
+    "Поиск по Uuid создателя"
+    CreatorUuid: IDFilterInput
+
+    "Поиск по логину создателя"
+    CreatorLogin: TextFilterInput
+    "Поиск по названию тегов"
+    TagName: TextFilterInput
+}
+
+input EventSort @goModel(model: "calend/internal/modules/domain/search/dto.EventSort") {
+    "По временной метке"
+    Timestamp: SortDirection
+    "По названию"
+    Name: SortDirection
+    "По описанию"
+    Description: SortDirection
+    "По типу"
+    Type: SortDirection
+    "По имени создателя"
+    CreatorLogin: SortDirection
+}`, BuiltIn: false},
+	{Name: "../schemas/tag.query.graphql", Input: `extend type Query {
+    Tag(id: ID!): Tag!
+    Tags: [Tag!]!
+}
+
+extend type Mutation {
+    TagCreate(tag: CreateTag!): Tag!
+    TagUpdate(id: ID!, tag: UpdateTag!): Tag!
+    TagDelete(id: ID!): ID!
+    TagRestore(id: ID!): Tag!
+}
+
+input CreateTag @goModel(model: "calend/internal/modules/domain/tag/dto.CreateTag") {
+    Name: String!
+    Description: String!
+}
+
+input UpdateTag @goModel(model: "calend/internal/modules/domain/tag/dto.UpdateTag") {
+    Name: String!
+    Description: String!
+}
+`, BuiltIn: false},
+	{Name: "../schemas/tag.types.graphql", Input: `type Tag @goModel(model: "calend/internal/modules/domain/tag/dto.Tag") {
+    Uuid: ID!
+    Name: String!
+    Description: String!
+}
+`, BuiltIn: false},
 	{Name: "../schemas/types.graphql", Input: `type Query {
    ping: String!
 }
 
 type Mutation {
     ping: String!
-}`, BuiltIn: false},
-	{Name: "../schemas/user.mutation.graphql", Input: `
+}
+
+scalar DateTime
 
 `, BuiltIn: false},
 	{Name: "../schemas/user.query.graphql", Input: `extend type Query {
     User(id: ID!): User!
-}`, BuiltIn: false},
+    Users: [User!]!
+}
+
+extend type Mutation {
+    UserUpdateSelf(updateUser: UpdateUser!): User!
+}
+
+input UpdateUser @goModel(model: "calend/internal/modules/domain/user/dto.UpdateUser") {
+    Phone: String!
+    Login: String!
+}
+`, BuiltIn: false},
 	{Name: "../schemas/user.types.graphql", Input: `type User @goModel(model: "calend/internal/modules/domain/user/dto.User") {
     Uuid: ID!
     Login: String!
@@ -390,10 +997,106 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
+func (ec *executionContext) field_Mutation_EventAddInvitations_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 []*dto.CreateInvitation
+	if tmp, ok := rawArgs["invitations"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("invitations"))
+		arg1, err = ec.unmarshalOCreateInvitation2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐCreateInvitationᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["invitations"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_EventCreate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 dto.CreateEvent
+	if tmp, ok := rawArgs["event"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("event"))
+		arg0, err = ec.unmarshalNCreateEvent2calendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐCreateEvent(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["event"] = arg0
+	var arg1 []*dto.CreateInvitation
+	if tmp, ok := rawArgs["invitations"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("invitations"))
+		arg1, err = ec.unmarshalOCreateInvitation2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐCreateInvitationᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["invitations"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_EventDelete_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_EventUpdate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 dto.UpdateEvent
+	if tmp, ok := rawArgs["event"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("event"))
+		arg1, err = ec.unmarshalNUpdateEvent2calendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐUpdateEvent(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["event"] = arg1
+	var arg2 []*dto.CreateInvitation
+	if tmp, ok := rawArgs["invitations"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("invitations"))
+		arg2, err = ec.unmarshalOCreateInvitation2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐCreateInvitationᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["invitations"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_SingUp_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 dto.NewUser
+	var arg0 dto1.NewUser
 	if tmp, ok := rawArgs["newUser"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("newUser"))
 		arg0, err = ec.unmarshalNNewUser2calendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐNewUser(ctx, tmp)
@@ -405,10 +1108,124 @@ func (ec *executionContext) field_Mutation_SingUp_args(ctx context.Context, rawA
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_TagCreate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 dto2.CreateTag
+	if tmp, ok := rawArgs["tag"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag"))
+		arg0, err = ec.unmarshalNCreateTag2calendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐCreateTag(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["tag"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_TagDelete_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_TagRestore_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_TagUpdate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 dto2.UpdateTag
+	if tmp, ok := rawArgs["tag"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tag"))
+		arg1, err = ec.unmarshalNUpdateTag2calendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐUpdateTag(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["tag"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_UserUpdateSelf_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 dto3.UpdateUser
+	if tmp, ok := rawArgs["updateUser"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updateUser"))
+		arg0, err = ec.unmarshalNUpdateUser2calendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUpdateUser(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["updateUser"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_AccessRight_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 access.Type
+	if tmp, ok := rawArgs["code"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("code"))
+		arg0, err = ec.unmarshalNAccessRightCode2calendᚋinternalᚋmodelsᚋaccessᚐType(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["code"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_Event_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_Login_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 dto.UserCredentials
+	var arg0 dto1.UserCredentials
 	if tmp, ok := rawArgs["credentials"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentials"))
 		arg0, err = ec.unmarshalNUserCredentials2calendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐUserCredentials(ctx, tmp)
@@ -432,6 +1249,54 @@ func (ec *executionContext) field_Query_RefreshToken_args(ctx context.Context, r
 		}
 	}
 	args["refreshToken"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_SearchEvent_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 paginate.ByPage
+	if tmp, ok := rawArgs["paginate"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("paginate"))
+		arg0, err = ec.unmarshalNPaginationInput2calendᚋinternalᚋpkgᚋsearchᚋpaginateᚐByPage(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["paginate"] = arg0
+	var arg1 *dto4.EventFilter
+	if tmp, ok := rawArgs["filter"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+		arg1, err = ec.unmarshalOEventFilter2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋsearchᚋdtoᚐEventFilter(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["filter"] = arg1
+	var arg2 *dto4.EventSort
+	if tmp, ok := rawArgs["sort"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+		arg2, err = ec.unmarshalOEventSort2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋsearchᚋdtoᚐEventSort(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["sort"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_Tag_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -503,7 +1368,661 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _JWT_AccessToken(ctx context.Context, field graphql.CollectedField, obj *dto.JWT) (ret graphql.Marshaler) {
+func (ec *executionContext) _AccessRight_Code(ctx context.Context, field graphql.CollectedField, obj *dto5.AccessRight) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AccessRight_Code(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Code, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(access.Type)
+	fc.Result = res
+	return ec.marshalNAccessRightCode2calendᚋinternalᚋmodelsᚋaccessᚐType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AccessRight_Code(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AccessRight",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type AccessRightCode does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AccessRight_Description(ctx context.Context, field graphql.CollectedField, obj *dto5.AccessRight) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AccessRight_Description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AccessRight_Description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AccessRight",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Event_Uuid(ctx context.Context, field graphql.CollectedField, obj *dto.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_Uuid(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Uuid, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Event_Uuid(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Event_Timestamp(ctx context.Context, field graphql.CollectedField, obj *dto.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_Timestamp(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Timestamp, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNDateTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Event_Timestamp(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Event_Name(ctx context.Context, field graphql.CollectedField, obj *dto.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_Name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Event_Name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Event_Description(ctx context.Context, field graphql.CollectedField, obj *dto.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_Description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalNString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Event_Description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Event_Type(ctx context.Context, field graphql.CollectedField, obj *dto.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_Type(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Type, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Event_Type(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Event_IsWholeDay(ctx context.Context, field graphql.CollectedField, obj *dto.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_IsWholeDay(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsWholeDay, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Event_IsWholeDay(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Event_Tags(ctx context.Context, field graphql.CollectedField, obj *dto.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_Tags(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Event().Tags(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*dto2.Tag)
+	fc.Result = res
+	return ec.marshalNTag2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐTagᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Event_Tags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_Tag_Uuid(ctx, field)
+			case "Name":
+				return ec.fieldContext_Tag_Name(ctx, field)
+			case "Description":
+				return ec.fieldContext_Tag_Description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Tag", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Event_Invitations(ctx context.Context, field graphql.CollectedField, obj *dto.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_Invitations(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Invitations, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*dto.Invitation)
+	fc.Result = res
+	return ec.marshalNInvitation2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐInvitationᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Event_Invitations(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_Invitation_Uuid(ctx, field)
+			case "User":
+				return ec.fieldContext_Invitation_User(ctx, field)
+			case "AccessRight":
+				return ec.fieldContext_Invitation_AccessRight(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Invitation", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Event_Creator(ctx context.Context, field graphql.CollectedField, obj *dto.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_Creator(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Event().Creator(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto3.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Event_Creator(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_User_Uuid(ctx, field)
+			case "Login":
+				return ec.fieldContext_User_Login(ctx, field)
+			case "Phone":
+				return ec.fieldContext_User_Phone(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Invitation_Uuid(ctx context.Context, field graphql.CollectedField, obj *dto.Invitation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Invitation_Uuid(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Uuid, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Invitation_Uuid(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Invitation",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Invitation_User(ctx context.Context, field graphql.CollectedField, obj *dto.Invitation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Invitation_User(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Invitation().User(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto3.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Invitation_User(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Invitation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_User_Uuid(ctx, field)
+			case "Login":
+				return ec.fieldContext_User_Login(ctx, field)
+			case "Phone":
+				return ec.fieldContext_User_Phone(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Invitation_AccessRight(ctx context.Context, field graphql.CollectedField, obj *dto.Invitation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Invitation_AccessRight(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Invitation().AccessRight(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto5.AccessRight)
+	fc.Result = res
+	return ec.marshalNAccessRight2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋaccess_rightᚋdtoᚐAccessRight(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Invitation_AccessRight(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Invitation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Code":
+				return ec.fieldContext_AccessRight_Code(ctx, field)
+			case "Description":
+				return ec.fieldContext_AccessRight_Description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AccessRight", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _JWT_AccessToken(ctx context.Context, field graphql.CollectedField, obj *dto1.JWT) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_JWT_AccessToken(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -547,7 +2066,7 @@ func (ec *executionContext) fieldContext_JWT_AccessToken(ctx context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _JWT_RefreshToken(ctx context.Context, field graphql.CollectedField, obj *dto.JWT) (ret graphql.Marshaler) {
+func (ec *executionContext) _JWT_RefreshToken(ctx context.Context, field graphql.CollectedField, obj *dto1.JWT) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_JWT_RefreshToken(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -591,7 +2110,7 @@ func (ec *executionContext) fieldContext_JWT_RefreshToken(ctx context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _JWT_Session(ctx context.Context, field graphql.CollectedField, obj *dto.JWT) (ret graphql.Marshaler) {
+func (ec *executionContext) _JWT_Session(ctx context.Context, field graphql.CollectedField, obj *dto1.JWT) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_JWT_Session(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -699,7 +2218,7 @@ func (ec *executionContext) _Mutation_SingUp(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().SingUp(rctx, fc.Args["newUser"].(dto.NewUser))
+		return ec.resolvers.Mutation().SingUp(rctx, fc.Args["newUser"].(dto1.NewUser))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -711,7 +2230,7 @@ func (ec *executionContext) _Mutation_SingUp(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*dto1.User)
+	res := resTmp.(*dto3.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUser(ctx, field.Selections, res)
 }
@@ -742,6 +2261,593 @@ func (ec *executionContext) fieldContext_Mutation_SingUp(ctx context.Context, fi
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_SingUp_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_EventCreate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_EventCreate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EventCreate(rctx, fc.Args["event"].(dto.CreateEvent), fc.Args["invitations"].([]*dto.CreateInvitation))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto.Event)
+	fc.Result = res
+	return ec.marshalNEvent2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐEvent(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_EventCreate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_Event_Uuid(ctx, field)
+			case "Timestamp":
+				return ec.fieldContext_Event_Timestamp(ctx, field)
+			case "Name":
+				return ec.fieldContext_Event_Name(ctx, field)
+			case "Description":
+				return ec.fieldContext_Event_Description(ctx, field)
+			case "Type":
+				return ec.fieldContext_Event_Type(ctx, field)
+			case "IsWholeDay":
+				return ec.fieldContext_Event_IsWholeDay(ctx, field)
+			case "Tags":
+				return ec.fieldContext_Event_Tags(ctx, field)
+			case "Invitations":
+				return ec.fieldContext_Event_Invitations(ctx, field)
+			case "Creator":
+				return ec.fieldContext_Event_Creator(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_EventCreate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_EventAddInvitations(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_EventAddInvitations(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EventAddInvitations(rctx, fc.Args["id"].(string), fc.Args["invitations"].([]*dto.CreateInvitation))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto.Event)
+	fc.Result = res
+	return ec.marshalNEvent2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐEvent(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_EventAddInvitations(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_Event_Uuid(ctx, field)
+			case "Timestamp":
+				return ec.fieldContext_Event_Timestamp(ctx, field)
+			case "Name":
+				return ec.fieldContext_Event_Name(ctx, field)
+			case "Description":
+				return ec.fieldContext_Event_Description(ctx, field)
+			case "Type":
+				return ec.fieldContext_Event_Type(ctx, field)
+			case "IsWholeDay":
+				return ec.fieldContext_Event_IsWholeDay(ctx, field)
+			case "Tags":
+				return ec.fieldContext_Event_Tags(ctx, field)
+			case "Invitations":
+				return ec.fieldContext_Event_Invitations(ctx, field)
+			case "Creator":
+				return ec.fieldContext_Event_Creator(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_EventAddInvitations_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_EventUpdate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_EventUpdate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EventUpdate(rctx, fc.Args["id"].(string), fc.Args["event"].(dto.UpdateEvent), fc.Args["invitations"].([]*dto.CreateInvitation))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto.Event)
+	fc.Result = res
+	return ec.marshalNEvent2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐEvent(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_EventUpdate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_Event_Uuid(ctx, field)
+			case "Timestamp":
+				return ec.fieldContext_Event_Timestamp(ctx, field)
+			case "Name":
+				return ec.fieldContext_Event_Name(ctx, field)
+			case "Description":
+				return ec.fieldContext_Event_Description(ctx, field)
+			case "Type":
+				return ec.fieldContext_Event_Type(ctx, field)
+			case "IsWholeDay":
+				return ec.fieldContext_Event_IsWholeDay(ctx, field)
+			case "Tags":
+				return ec.fieldContext_Event_Tags(ctx, field)
+			case "Invitations":
+				return ec.fieldContext_Event_Invitations(ctx, field)
+			case "Creator":
+				return ec.fieldContext_Event_Creator(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_EventUpdate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_EventDelete(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_EventDelete(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EventDelete(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_EventDelete(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_EventDelete_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_TagCreate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_TagCreate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().TagCreate(rctx, fc.Args["tag"].(dto2.CreateTag))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto2.Tag)
+	fc.Result = res
+	return ec.marshalNTag2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐTag(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_TagCreate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_Tag_Uuid(ctx, field)
+			case "Name":
+				return ec.fieldContext_Tag_Name(ctx, field)
+			case "Description":
+				return ec.fieldContext_Tag_Description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Tag", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_TagCreate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_TagUpdate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_TagUpdate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().TagUpdate(rctx, fc.Args["id"].(string), fc.Args["tag"].(dto2.UpdateTag))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto2.Tag)
+	fc.Result = res
+	return ec.marshalNTag2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐTag(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_TagUpdate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_Tag_Uuid(ctx, field)
+			case "Name":
+				return ec.fieldContext_Tag_Name(ctx, field)
+			case "Description":
+				return ec.fieldContext_Tag_Description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Tag", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_TagUpdate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_TagDelete(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_TagDelete(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().TagDelete(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_TagDelete(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_TagDelete_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_TagRestore(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_TagRestore(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().TagRestore(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto2.Tag)
+	fc.Result = res
+	return ec.marshalNTag2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐTag(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_TagRestore(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_Tag_Uuid(ctx, field)
+			case "Name":
+				return ec.fieldContext_Tag_Name(ctx, field)
+			case "Description":
+				return ec.fieldContext_Tag_Description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Tag", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_TagRestore_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_UserUpdateSelf(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_UserUpdateSelf(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UserUpdateSelf(rctx, fc.Args["updateUser"].(dto3.UpdateUser))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto3.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_UserUpdateSelf(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_User_Uuid(ctx, field)
+			case "Login":
+				return ec.fieldContext_User_Login(ctx, field)
+			case "Phone":
+				return ec.fieldContext_User_Phone(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_UserUpdateSelf_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -792,6 +2898,117 @@ func (ec *executionContext) fieldContext_Query_ping(ctx context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_AccessRight(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_AccessRight(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().AccessRight(rctx, fc.Args["code"].(access.Type))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto5.AccessRight)
+	fc.Result = res
+	return ec.marshalNAccessRight2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋaccess_rightᚋdtoᚐAccessRight(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_AccessRight(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Code":
+				return ec.fieldContext_AccessRight_Code(ctx, field)
+			case "Description":
+				return ec.fieldContext_AccessRight_Description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AccessRight", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_AccessRight_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_AccessRights(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_AccessRights(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().AccessRights(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*dto5.AccessRight)
+	fc.Result = res
+	return ec.marshalNAccessRight2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋaccess_rightᚋdtoᚐAccessRightᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_AccessRights(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Code":
+				return ec.fieldContext_AccessRight_Code(ctx, field)
+			case "Description":
+				return ec.fieldContext_AccessRight_Description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AccessRight", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_Login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_Login(ctx, field)
 	if err != nil {
@@ -806,7 +3023,7 @@ func (ec *executionContext) _Query_Login(ctx context.Context, field graphql.Coll
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Login(rctx, fc.Args["credentials"].(dto.UserCredentials))
+		return ec.resolvers.Query().Login(rctx, fc.Args["credentials"].(dto1.UserCredentials))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -818,7 +3035,7 @@ func (ec *executionContext) _Query_Login(ctx context.Context, field graphql.Coll
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*dto.JWT)
+	res := resTmp.(*dto1.JWT)
 	fc.Result = res
 	return ec.marshalNJWT2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐJWT(ctx, field.Selections, res)
 }
@@ -881,7 +3098,7 @@ func (ec *executionContext) _Query_RefreshToken(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*dto.Tokens)
+	res := resTmp.(*dto1.Tokens)
 	fc.Result = res
 	return ec.marshalNTokens2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐTokens(ctx, field.Selections, res)
 }
@@ -916,6 +3133,335 @@ func (ec *executionContext) fieldContext_Query_RefreshToken(ctx context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_Event(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_Event(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Event(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto.Event)
+	fc.Result = res
+	return ec.marshalNEvent2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐEvent(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_Event(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_Event_Uuid(ctx, field)
+			case "Timestamp":
+				return ec.fieldContext_Event_Timestamp(ctx, field)
+			case "Name":
+				return ec.fieldContext_Event_Name(ctx, field)
+			case "Description":
+				return ec.fieldContext_Event_Description(ctx, field)
+			case "Type":
+				return ec.fieldContext_Event_Type(ctx, field)
+			case "IsWholeDay":
+				return ec.fieldContext_Event_IsWholeDay(ctx, field)
+			case "Tags":
+				return ec.fieldContext_Event_Tags(ctx, field)
+			case "Invitations":
+				return ec.fieldContext_Event_Invitations(ctx, field)
+			case "Creator":
+				return ec.fieldContext_Event_Creator(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_Event_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_EventsAvailable(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_EventsAvailable(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().EventsAvailable(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*dto.Event)
+	fc.Result = res
+	return ec.marshalNEvent2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐEventᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_EventsAvailable(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_Event_Uuid(ctx, field)
+			case "Timestamp":
+				return ec.fieldContext_Event_Timestamp(ctx, field)
+			case "Name":
+				return ec.fieldContext_Event_Name(ctx, field)
+			case "Description":
+				return ec.fieldContext_Event_Description(ctx, field)
+			case "Type":
+				return ec.fieldContext_Event_Type(ctx, field)
+			case "IsWholeDay":
+				return ec.fieldContext_Event_IsWholeDay(ctx, field)
+			case "Tags":
+				return ec.fieldContext_Event_Tags(ctx, field)
+			case "Invitations":
+				return ec.fieldContext_Event_Invitations(ctx, field)
+			case "Creator":
+				return ec.fieldContext_Event_Creator(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_SearchEvent(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_SearchEvent(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SearchEvent(rctx, fc.Args["paginate"].(paginate.ByPage), fc.Args["filter"].(*dto4.EventFilter), fc.Args["sort"].(*dto4.EventSort))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*dto.Event)
+	fc.Result = res
+	return ec.marshalNEvent2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐEventᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_SearchEvent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_Event_Uuid(ctx, field)
+			case "Timestamp":
+				return ec.fieldContext_Event_Timestamp(ctx, field)
+			case "Name":
+				return ec.fieldContext_Event_Name(ctx, field)
+			case "Description":
+				return ec.fieldContext_Event_Description(ctx, field)
+			case "Type":
+				return ec.fieldContext_Event_Type(ctx, field)
+			case "IsWholeDay":
+				return ec.fieldContext_Event_IsWholeDay(ctx, field)
+			case "Tags":
+				return ec.fieldContext_Event_Tags(ctx, field)
+			case "Invitations":
+				return ec.fieldContext_Event_Invitations(ctx, field)
+			case "Creator":
+				return ec.fieldContext_Event_Creator(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_SearchEvent_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_Tag(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_Tag(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Tag(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*dto2.Tag)
+	fc.Result = res
+	return ec.marshalNTag2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐTag(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_Tag(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_Tag_Uuid(ctx, field)
+			case "Name":
+				return ec.fieldContext_Tag_Name(ctx, field)
+			case "Description":
+				return ec.fieldContext_Tag_Description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Tag", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_Tag_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_Tags(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_Tags(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Tags(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*dto2.Tag)
+	fc.Result = res
+	return ec.marshalNTag2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐTagᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_Tags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_Tag_Uuid(ctx, field)
+			case "Name":
+				return ec.fieldContext_Tag_Name(ctx, field)
+			case "Description":
+				return ec.fieldContext_Tag_Description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Tag", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_User(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_User(ctx, field)
 	if err != nil {
@@ -942,7 +3488,7 @@ func (ec *executionContext) _Query_User(ctx context.Context, field graphql.Colle
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*dto1.User)
+	res := resTmp.(*dto3.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUser(ctx, field.Selections, res)
 }
@@ -975,6 +3521,58 @@ func (ec *executionContext) fieldContext_Query_User(ctx context.Context, field g
 	if fc.Args, err = ec.field_Query_User_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_Users(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_Users(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Users(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*dto3.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_Users(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_User_Uuid(ctx, field)
+			case "Login":
+				return ec.fieldContext_User_Login(ctx, field)
+			case "Phone":
+				return ec.fieldContext_User_Phone(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -1178,7 +3776,7 @@ func (ec *executionContext) _Session_User(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*dto1.User)
+	res := resTmp.(*dto3.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUser(ctx, field.Selections, res)
 }
@@ -1204,7 +3802,139 @@ func (ec *executionContext) fieldContext_Session_User(ctx context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Tokens_AccessToken(ctx context.Context, field graphql.CollectedField, obj *dto.Tokens) (ret graphql.Marshaler) {
+func (ec *executionContext) _Tag_Uuid(ctx context.Context, field graphql.CollectedField, obj *dto2.Tag) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Tag_Uuid(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Uuid, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Tag_Uuid(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Tag",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Tag_Name(ctx context.Context, field graphql.CollectedField, obj *dto2.Tag) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Tag_Name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Tag_Name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Tag",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Tag_Description(ctx context.Context, field graphql.CollectedField, obj *dto2.Tag) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Tag_Description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Tag_Description(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Tag",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Tokens_AccessToken(ctx context.Context, field graphql.CollectedField, obj *dto1.Tokens) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Tokens_AccessToken(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1248,7 +3978,7 @@ func (ec *executionContext) fieldContext_Tokens_AccessToken(ctx context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _Tokens_RefreshToken(ctx context.Context, field graphql.CollectedField, obj *dto.Tokens) (ret graphql.Marshaler) {
+func (ec *executionContext) _Tokens_RefreshToken(ctx context.Context, field graphql.CollectedField, obj *dto1.Tokens) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Tokens_RefreshToken(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1292,7 +4022,7 @@ func (ec *executionContext) fieldContext_Tokens_RefreshToken(ctx context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _User_Uuid(ctx context.Context, field graphql.CollectedField, obj *dto1.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_Uuid(ctx context.Context, field graphql.CollectedField, obj *dto3.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_Uuid(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1336,7 +4066,7 @@ func (ec *executionContext) fieldContext_User_Uuid(ctx context.Context, field gr
 	return fc, nil
 }
 
-func (ec *executionContext) _User_Login(ctx context.Context, field graphql.CollectedField, obj *dto1.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_Login(ctx context.Context, field graphql.CollectedField, obj *dto3.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_Login(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1380,7 +4110,7 @@ func (ec *executionContext) fieldContext_User_Login(ctx context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _User_Phone(ctx context.Context, field graphql.CollectedField, obj *dto1.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_Phone(ctx context.Context, field graphql.CollectedField, obj *dto3.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_Phone(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -3197,8 +5927,444 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj interface{}) (dto.NewUser, error) {
-	var it dto.NewUser
+func (ec *executionContext) unmarshalInputBoolFilterInput(ctx context.Context, obj interface{}) (filter.BoolQueryFilter, error) {
+	var it filter.BoolQueryFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Eq"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Eq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Eq"))
+			it.Eq, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateEvent(ctx context.Context, obj interface{}) (dto.CreateEvent, error) {
+	var it dto.CreateEvent
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Timestamp", "Name", "Description", "Type", "IsWholeDay", "TagUuids"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Timestamp":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Timestamp"))
+			it.Timestamp, err = ec.unmarshalNDateTime2timeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Description"))
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Type":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Type"))
+			it.Type, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "IsWholeDay":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("IsWholeDay"))
+			it.IsWholeDay, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "TagUuids":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("TagUuids"))
+			it.TagUuids, err = ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateInvitation(ctx context.Context, obj interface{}) (dto.CreateInvitation, error) {
+	var it dto.CreateInvitation
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"UserUuid", "AccessRightCode"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "UserUuid":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("UserUuid"))
+			it.UserUuid, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "AccessRightCode":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("AccessRightCode"))
+			it.AccessRightCode, err = ec.unmarshalNAccessRightCode2calendᚋinternalᚋmodelsᚋaccessᚐType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateTag(ctx context.Context, obj interface{}) (dto2.CreateTag, error) {
+	var it dto2.CreateTag
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Name", "Description"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Description"))
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDateFilterInput(ctx context.Context, obj interface{}) (filter.DateQueryFilter, error) {
+	var it filter.DateQueryFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Eq", "From", "To"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Eq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Eq"))
+			it.Eq, err = ec.unmarshalODateTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "From":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("From"))
+			it.From, err = ec.unmarshalODateTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "To":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("To"))
+			it.To, err = ec.unmarshalODateTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputEventFilter(ctx context.Context, obj interface{}) (dto4.EventFilter, error) {
+	var it dto4.EventFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"FTSearchStr", "Timestamp", "Name", "Description", "Type", "IsWholeDay", "CreatorUuid", "CreatorLogin", "TagName"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "FTSearchStr":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("FTSearchStr"))
+			it.FTSearchStr, err = ec.unmarshalOFTSearchFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐFTSQueryFilter(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Timestamp":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Timestamp"))
+			it.Timestamp, err = ec.unmarshalODateFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐDateQueryFilter(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Name"))
+			it.Name, err = ec.unmarshalOTextFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐTextQueryFilter(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Description"))
+			it.Description, err = ec.unmarshalOTextFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐTextQueryFilter(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Type":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Type"))
+			it.Type, err = ec.unmarshalOTextFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐTextQueryFilter(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "IsWholeDay":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("IsWholeDay"))
+			it.IsWholeDay, err = ec.unmarshalOBoolFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐBoolQueryFilter(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "CreatorUuid":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("CreatorUuid"))
+			it.CreatorUuid, err = ec.unmarshalOIDFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐIDQueryFilter(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "CreatorLogin":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("CreatorLogin"))
+			it.CreatorLogin, err = ec.unmarshalOTextFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐTextQueryFilter(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "TagName":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("TagName"))
+			it.TagName, err = ec.unmarshalOTextFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐTextQueryFilter(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputEventSort(ctx context.Context, obj interface{}) (dto4.EventSort, error) {
+	var it dto4.EventSort
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Timestamp", "Name", "Description", "Type", "CreatorLogin"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Timestamp":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Timestamp"))
+			it.Timestamp, err = ec.unmarshalOSortDirection2ᚖcalendᚋinternalᚋpkgᚋsearchᚋsortᚐDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Name"))
+			it.Name, err = ec.unmarshalOSortDirection2ᚖcalendᚋinternalᚋpkgᚋsearchᚋsortᚐDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Description"))
+			it.Description, err = ec.unmarshalOSortDirection2ᚖcalendᚋinternalᚋpkgᚋsearchᚋsortᚐDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Type":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Type"))
+			it.Type, err = ec.unmarshalOSortDirection2ᚖcalendᚋinternalᚋpkgᚋsearchᚋsortᚐDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "CreatorLogin":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("CreatorLogin"))
+			it.CreatorLogin, err = ec.unmarshalOSortDirection2ᚖcalendᚋinternalᚋpkgᚋsearchᚋsortᚐDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputFTSearchFilterInput(ctx context.Context, obj interface{}) (filter.FTSQueryFilter, error) {
+	var it filter.FTSQueryFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Str"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Str":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Str"))
+			it.Str, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputIDFilterInput(ctx context.Context, obj interface{}) (filter.IDQueryFilter, error) {
+	var it filter.IDQueryFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Eq", "In", "Nin"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Eq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Eq"))
+			it.Eq, err = ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "In":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("In"))
+			it.In, err = ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Nin":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Nin"))
+			it.Nin, err = ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj interface{}) (dto1.NewUser, error) {
+	var it dto1.NewUser
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -3241,8 +6407,236 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputUserCredentials(ctx context.Context, obj interface{}) (dto.UserCredentials, error) {
-	var it dto.UserCredentials
+func (ec *executionContext) unmarshalInputPaginationInput(ctx context.Context, obj interface{}) (paginate.ByPage, error) {
+	var it paginate.ByPage
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Page", "PageSize"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Page":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Page"))
+			it.Page, err = ec.unmarshalNInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "PageSize":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("PageSize"))
+			it.PageSize, err = ec.unmarshalNInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTextFilterInput(ctx context.Context, obj interface{}) (filter.TextQueryFilter, error) {
+	var it filter.TextQueryFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Ts", "Eq", "In", "Nin"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Ts":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Ts"))
+			it.Ts, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Eq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Eq"))
+			it.Eq, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "In":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("In"))
+			it.In, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Nin":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Nin"))
+			it.Nin, err = ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateEvent(ctx context.Context, obj interface{}) (dto.UpdateEvent, error) {
+	var it dto.UpdateEvent
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Timestamp", "Name", "Description", "Type", "IsWholeDay", "TagUuids"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Timestamp":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Timestamp"))
+			it.Timestamp, err = ec.unmarshalNDateTime2timeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Description"))
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Type":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Type"))
+			it.Type, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "IsWholeDay":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("IsWholeDay"))
+			it.IsWholeDay, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "TagUuids":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("TagUuids"))
+			it.TagUuids, err = ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateTag(ctx context.Context, obj interface{}) (dto2.UpdateTag, error) {
+	var it dto2.UpdateTag
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Name", "Description"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Description"))
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateUser(ctx context.Context, obj interface{}) (dto3.UpdateUser, error) {
+	var it dto3.UpdateUser
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Phone", "Login"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Phone":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Phone"))
+			it.Phone, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Login":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Login"))
+			it.Login, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUserCredentials(ctx context.Context, obj interface{}) (dto1.UserCredentials, error) {
+	var it dto1.UserCredentials
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -3285,9 +6679,222 @@ func (ec *executionContext) unmarshalInputUserCredentials(ctx context.Context, o
 
 // region    **************************** object.gotpl ****************************
 
+var accessRightImplementors = []string{"AccessRight"}
+
+func (ec *executionContext) _AccessRight(ctx context.Context, sel ast.SelectionSet, obj *dto5.AccessRight) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, accessRightImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AccessRight")
+		case "Code":
+
+			out.Values[i] = ec._AccessRight_Code(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Description":
+
+			out.Values[i] = ec._AccessRight_Description(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var eventImplementors = []string{"Event"}
+
+func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, obj *dto.Event) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, eventImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Event")
+		case "Uuid":
+
+			out.Values[i] = ec._Event_Uuid(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "Timestamp":
+
+			out.Values[i] = ec._Event_Timestamp(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "Name":
+
+			out.Values[i] = ec._Event_Name(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "Description":
+
+			out.Values[i] = ec._Event_Description(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "Type":
+
+			out.Values[i] = ec._Event_Type(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "IsWholeDay":
+
+			out.Values[i] = ec._Event_IsWholeDay(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "Tags":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Event_Tags(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "Invitations":
+
+			out.Values[i] = ec._Event_Invitations(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "Creator":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Event_Creator(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var invitationImplementors = []string{"Invitation"}
+
+func (ec *executionContext) _Invitation(ctx context.Context, sel ast.SelectionSet, obj *dto.Invitation) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, invitationImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Invitation")
+		case "Uuid":
+
+			out.Values[i] = ec._Invitation_Uuid(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "User":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Invitation_User(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "AccessRight":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Invitation_AccessRight(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var jWTImplementors = []string{"JWT"}
 
-func (ec *executionContext) _JWT(ctx context.Context, sel ast.SelectionSet, obj *dto.JWT) graphql.Marshaler {
+func (ec *executionContext) _JWT(ctx context.Context, sel ast.SelectionSet, obj *dto1.JWT) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, jWTImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -3364,6 +6971,87 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "EventCreate":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_EventCreate(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "EventAddInvitations":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_EventAddInvitations(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "EventUpdate":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_EventUpdate(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "EventDelete":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_EventDelete(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "TagCreate":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_TagCreate(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "TagUpdate":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_TagUpdate(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "TagDelete":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_TagDelete(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "TagRestore":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_TagRestore(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "UserUpdateSelf":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_UserUpdateSelf(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3404,6 +7092,52 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_ping(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "AccessRight":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_AccessRight(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "AccessRights":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_AccessRights(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -3463,6 +7197,121 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
+		case "Event":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_Event(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "EventsAvailable":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_EventsAvailable(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "SearchEvent":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_SearchEvent(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "Tag":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_Tag(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "Tags":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_Tags(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
 		case "User":
 			field := field
 
@@ -3473,6 +7322,29 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_User(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "Users":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_Users(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -3557,9 +7429,51 @@ func (ec *executionContext) _Session(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
+var tagImplementors = []string{"Tag"}
+
+func (ec *executionContext) _Tag(ctx context.Context, sel ast.SelectionSet, obj *dto2.Tag) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tagImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Tag")
+		case "Uuid":
+
+			out.Values[i] = ec._Tag_Uuid(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Name":
+
+			out.Values[i] = ec._Tag_Name(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Description":
+
+			out.Values[i] = ec._Tag_Description(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var tokensImplementors = []string{"Tokens"}
 
-func (ec *executionContext) _Tokens(ctx context.Context, sel ast.SelectionSet, obj *dto.Tokens) graphql.Marshaler {
+func (ec *executionContext) _Tokens(ctx context.Context, sel ast.SelectionSet, obj *dto1.Tokens) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, tokensImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -3594,7 +7508,7 @@ func (ec *executionContext) _Tokens(ctx context.Context, sel ast.SelectionSet, o
 
 var userImplementors = []string{"User"}
 
-func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *dto1.User) graphql.Marshaler {
+func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *dto3.User) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, userImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -3952,6 +7866,80 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) marshalNAccessRight2calendᚋinternalᚋmodulesᚋdomainᚋaccess_rightᚋdtoᚐAccessRight(ctx context.Context, sel ast.SelectionSet, v dto5.AccessRight) graphql.Marshaler {
+	return ec._AccessRight(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAccessRight2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋaccess_rightᚋdtoᚐAccessRightᚄ(ctx context.Context, sel ast.SelectionSet, v []*dto5.AccessRight) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAccessRight2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋaccess_rightᚋdtoᚐAccessRight(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAccessRight2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋaccess_rightᚋdtoᚐAccessRight(ctx context.Context, sel ast.SelectionSet, v *dto5.AccessRight) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AccessRight(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNAccessRightCode2calendᚋinternalᚋmodelsᚋaccessᚐType(ctx context.Context, v interface{}) (access.Type, error) {
+	tmp, err := graphql.UnmarshalString(v)
+	res := access.Type(tmp)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAccessRightCode2calendᚋinternalᚋmodelsᚋaccessᚐType(ctx context.Context, sel ast.SelectionSet, v access.Type) graphql.Marshaler {
+	res := graphql.MarshalString(string(v))
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3965,6 +7953,94 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNCreateEvent2calendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐCreateEvent(ctx context.Context, v interface{}) (dto.CreateEvent, error) {
+	res, err := ec.unmarshalInputCreateEvent(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNCreateInvitation2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐCreateInvitation(ctx context.Context, v interface{}) (*dto.CreateInvitation, error) {
+	res, err := ec.unmarshalInputCreateInvitation(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNCreateTag2calendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐCreateTag(ctx context.Context, v interface{}) (dto2.CreateTag, error) {
+	res, err := ec.unmarshalInputCreateTag(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNDateTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
+	res, err := graphql.UnmarshalTime(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDateTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
+	res := graphql.MarshalTime(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNEvent2calendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐEvent(ctx context.Context, sel ast.SelectionSet, v dto.Event) graphql.Marshaler {
+	return ec._Event(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNEvent2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐEventᚄ(ctx context.Context, sel ast.SelectionSet, v []*dto.Event) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNEvent2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐEvent(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNEvent2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐEvent(ctx context.Context, sel ast.SelectionSet, v *dto.Event) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Event(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
@@ -3982,11 +8058,86 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) marshalNJWT2calendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐJWT(ctx context.Context, sel ast.SelectionSet, v dto.JWT) graphql.Marshaler {
+func (ec *executionContext) unmarshalNInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	res := graphql.MarshalInt(*v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNInvitation2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐInvitationᚄ(ctx context.Context, sel ast.SelectionSet, v []*dto.Invitation) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNInvitation2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐInvitation(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNInvitation2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐInvitation(ctx context.Context, sel ast.SelectionSet, v *dto.Invitation) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Invitation(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNJWT2calendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐJWT(ctx context.Context, sel ast.SelectionSet, v dto1.JWT) graphql.Marshaler {
 	return ec._JWT(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNJWT2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐJWT(ctx context.Context, sel ast.SelectionSet, v *dto.JWT) graphql.Marshaler {
+func (ec *executionContext) marshalNJWT2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐJWT(ctx context.Context, sel ast.SelectionSet, v *dto1.JWT) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -3996,8 +8147,13 @@ func (ec *executionContext) marshalNJWT2ᚖcalendᚋinternalᚋmodulesᚋdomain�
 	return ec._JWT(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNNewUser2calendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐNewUser(ctx context.Context, v interface{}) (dto.NewUser, error) {
+func (ec *executionContext) unmarshalNNewUser2calendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐNewUser(ctx context.Context, v interface{}) (dto1.NewUser, error) {
 	res, err := ec.unmarshalInputNewUser(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNPaginationInput2calendᚋinternalᚋpkgᚋsearchᚋpaginateᚐByPage(ctx context.Context, v interface{}) (paginate.ByPage, error) {
+	res, err := ec.unmarshalInputPaginationInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -4026,11 +8182,90 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
-func (ec *executionContext) marshalNTokens2calendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐTokens(ctx context.Context, sel ast.SelectionSet, v dto.Tokens) graphql.Marshaler {
+func (ec *executionContext) unmarshalNString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNString2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	res := graphql.MarshalString(*v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNTag2calendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐTag(ctx context.Context, sel ast.SelectionSet, v dto2.Tag) graphql.Marshaler {
+	return ec._Tag(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTag2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐTagᚄ(ctx context.Context, sel ast.SelectionSet, v []*dto2.Tag) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTag2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐTag(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNTag2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐTag(ctx context.Context, sel ast.SelectionSet, v *dto2.Tag) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Tag(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTokens2calendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐTokens(ctx context.Context, sel ast.SelectionSet, v dto1.Tokens) graphql.Marshaler {
 	return ec._Tokens(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNTokens2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐTokens(ctx context.Context, sel ast.SelectionSet, v *dto.Tokens) graphql.Marshaler {
+func (ec *executionContext) marshalNTokens2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐTokens(ctx context.Context, sel ast.SelectionSet, v *dto1.Tokens) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -4040,11 +8275,70 @@ func (ec *executionContext) marshalNTokens2ᚖcalendᚋinternalᚋmodulesᚋdoma
 	return ec._Tokens(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNUser2calendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUser(ctx context.Context, sel ast.SelectionSet, v dto1.User) graphql.Marshaler {
+func (ec *executionContext) unmarshalNUpdateEvent2calendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐUpdateEvent(ctx context.Context, v interface{}) (dto.UpdateEvent, error) {
+	res, err := ec.unmarshalInputUpdateEvent(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateTag2calendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐUpdateTag(ctx context.Context, v interface{}) (dto2.UpdateTag, error) {
+	res, err := ec.unmarshalInputUpdateTag(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateUser2calendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUpdateUser(ctx context.Context, v interface{}) (dto3.UpdateUser, error) {
+	res, err := ec.unmarshalInputUpdateUser(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUser2calendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUser(ctx context.Context, sel ast.SelectionSet, v dto3.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUser2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUser(ctx context.Context, sel ast.SelectionSet, v *dto1.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*dto3.User) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUser2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUser(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNUser2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUser(ctx context.Context, sel ast.SelectionSet, v *dto3.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -4054,7 +8348,7 @@ func (ec *executionContext) marshalNUser2ᚖcalendᚋinternalᚋmodulesᚋdomain
 	return ec._User(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNUserCredentials2calendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐUserCredentials(ctx context.Context, v interface{}) (dto.UserCredentials, error) {
+func (ec *executionContext) unmarshalNUserCredentials2calendᚋinternalᚋmodulesᚋdomainᚋauthᚋdtoᚐUserCredentials(ctx context.Context, v interface{}) (dto1.UserCredentials, error) {
 	res, err := ec.unmarshalInputUserCredentials(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
@@ -4312,6 +8606,14 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
+func (ec *executionContext) unmarshalOBoolFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐBoolQueryFilter(ctx context.Context, v interface{}) (*filter.BoolQueryFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputBoolFilterInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4335,6 +8637,153 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	res := graphql.MarshalBoolean(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOCreateInvitation2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐCreateInvitationᚄ(ctx context.Context, v interface{}) ([]*dto.CreateInvitation, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*dto.CreateInvitation, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNCreateInvitation2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐCreateInvitation(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalODateFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐDateQueryFilter(ctx context.Context, v interface{}) (*filter.DateQueryFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDateFilterInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalODateTime2ᚖtimeᚐTime(ctx context.Context, v interface{}) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalODateTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalTime(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOEventFilter2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋsearchᚋdtoᚐEventFilter(ctx context.Context, v interface{}) (*dto4.EventFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputEventFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOEventSort2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋsearchᚋdtoᚐEventSort(ctx context.Context, v interface{}) (*dto4.EventSort, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputEventSort(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOFTSearchFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐFTSQueryFilter(ctx context.Context, v interface{}) (*filter.FTSQueryFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputFTSearchFilterInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOID2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNID2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOID2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNID2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalID(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalID(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOIDFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐIDQueryFilter(ctx context.Context, v interface{}) (*filter.IDQueryFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputIDFilterInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOSortDirection2ᚖcalendᚋinternalᚋpkgᚋsearchᚋsortᚐDirection(ctx context.Context, v interface{}) (*sort.Direction, error) {
+	if v == nil {
+		return nil, nil
+	}
+	tmp, err := graphql.UnmarshalString(v)
+	res := sort.Direction(tmp)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOSortDirection2ᚖcalendᚋinternalᚋpkgᚋsearchᚋsortᚐDirection(ctx context.Context, sel ast.SelectionSet, v *sort.Direction) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalString(string(*v))
 	return res
 }
 
@@ -4390,6 +8839,14 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	}
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOTextFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐTextQueryFilter(ctx context.Context, v interface{}) (*filter.TextQueryFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputTextFilterInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

@@ -5,3 +5,6 @@ type Query {
 type Mutation {
     ping: String!
 }
+
+scalar DateTime
+

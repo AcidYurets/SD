@@ -1,0 +1,11 @@
+type AccessRight @goModel(model: "calend/internal/modules/domain/access_right/dto.AccessRight") {
+    Code: AccessRightCode!
+    Description: String!
+}
+
+enum AccessRightCode @goModel(model: "calend/internal/models/access.Type") {
+    r
+    ri
+    riu
+    riud
+}

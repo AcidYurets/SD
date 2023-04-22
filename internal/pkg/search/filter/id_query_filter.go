@@ -10,8 +10,6 @@ type IDQueryFilter struct {
 	In []string
 	// По не вхождению в массив значения
 	Nin []string
-	// Учитывать ли дочерние элементы
-	WithHierarchy *bool
 }
 
 func (f *IDQueryFilter) Build(field string, b Builder) {

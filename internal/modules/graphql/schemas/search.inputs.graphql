@@ -1,0 +1,56 @@
+input DateFilterInput @goModel(model: "calend/internal/pkg/search/filter.DateQueryFilter"){
+    "По полному совпадению значения"
+    Eq : DateTime
+    "Начало периода"
+    From : DateTime
+    "Окончание периода"
+    To : DateTime
+}
+
+
+input FTSearchFilterInput @goModel(model: "calend/internal/pkg/search/filter.FTSQueryFilter") {
+    Str: String!
+}
+
+input IDFilterInput @goModel(model: "calend/internal/pkg/search/filter.IDQueryFilter") {
+    "По полному совпадению значения"
+    Eq: ID
+    "По вхождению в массив значения"
+    In: [ID!]
+    "По не вхождению в массив значения"
+    Nin: [ID!]
+}
+
+input TextFilterInput @goModel(model: "calend/internal/pkg/search/filter.TextQueryFilter"){
+    "Полнотекстовый поиск"
+    Ts: String
+    "По полному совпадению значения"
+    Eq: String
+    "По вхождению в массив значения"
+    In: [String!]
+    "По не вхождению в массив значения"
+    Nin: [String!]
+}
+
+input BoolFilterInput @goModel(model: "calend/internal/pkg/search/filter.BoolQueryFilter") {
+    "По полному совпадению значения"
+    Eq: Boolean
+}
+
+
+enum SortDirection @goModel(model: "calend/internal/pkg/search/sort.Direction") {
+    ASC
+    DESC
+}
+
+"Постраничная выборка данных"
+input PaginationInput @goModel(model: "calend/internal/pkg/search/paginate.ByPage")  {
+    "Номер Страница"
+    Page: Int!
+    "Размер страницы"
+    PageSize: Int!
+}
+
+
+
+

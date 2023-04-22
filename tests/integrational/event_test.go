@@ -81,11 +81,11 @@ func eventServiceTest(t *testing.T, service *event_serv.EventService, tagService
 		IsWholeDay:  false,
 		TagUuids:    []string{tag1.Uuid},
 	}
-	newInvs := dto.CreateEventInvitations{{
+	newInvs := dto.CreateInvitations{{
 		UserUuid:        currentUser2.Uuid,
 		AccessRightCode: "r",
 	}}
-	event, err := service.CreateWithInvitations(ctx1, newEvent, newInvs)
+	event, err := service.Create(ctx1, newEvent, newInvs)
 	assert.NoError(t, err)
 	if err != nil {
 		return
@@ -118,12 +118,12 @@ func eventServiceTest(t *testing.T, service *event_serv.EventService, tagService
 		IsWholeDay:  event.IsWholeDay,
 		TagUuids:    []string{tag2.Uuid},
 	}
-	updInvs := dto.CreateEventInvitations{
-		&dto.CreateEventInvitation{
+	updInvs := dto.CreateInvitations{
+		&dto.CreateInvitation{
 			UserUuid:        currentUser2.Uuid,
 			AccessRightCode: "r",
 		},
-		&dto.CreateEventInvitation{
+		&dto.CreateInvitation{
 			UserUuid:        currentUser3.Uuid,
 			AccessRightCode: "riu",
 		},
@@ -155,21 +155,21 @@ func eventServiceTest(t *testing.T, service *event_serv.EventService, tagService
 	assert.NoError(t, err)
 
 	// Заново создаем событие с 1 приглашением
-	event, err = service.CreateWithInvitations(ctx1, newEvent, newInvs)
+	event, err = service.Create(ctx1, newEvent, newInvs)
 	assert.NoError(t, err)
 	if err != nil {
 		return
 	}
 
-	addInvs1 := dto.CreateEventInvitations{
-		&dto.CreateEventInvitation{
+	addInvs1 := dto.CreateInvitations{
+		&dto.CreateInvitation{
 			UserUuid:        currentUser3.Uuid,
 			AccessRightCode: "ri",
 		},
 	}
 
-	addInvs2 := dto.CreateEventInvitations{
-		&dto.CreateEventInvitation{
+	addInvs2 := dto.CreateInvitations{
+		&dto.CreateInvitation{
 			UserUuid:        currentUser3.Uuid,
 			AccessRightCode: "riud",
 		},

@@ -31,7 +31,7 @@ func RegisterGraphQL(router *mux.Router, resolver *resolvers.Resolver, authServi
 		opCtx := graphql.GetOperationContext(ctx)
 		query := opCtx.OperationName
 
-		if !slice.Contains(permittedOperations, query) {
+		if slice.Contains(permittedOperations, query) {
 			// Разрешаем пройти дальне без авторизации
 			return next(ctx)
 		}

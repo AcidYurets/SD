@@ -1,0 +1,17 @@
+type Event @goModel(model: "calend/internal/modules/domain/event/dto.Event") {
+    Uuid: ID!
+    Timestamp: DateTime!
+    Name: String!
+    Description: String!
+    Type: String!
+    IsWholeDay: Boolean!
+    Tags: [Tag!]!
+    Invitations: [Invitation!]!
+    Creator: User!
+}
+
+type Invitation @goModel(model: "calend/internal/modules/domain/event/dto.Invitation") {
+    Uuid: ID!
+    User: User!
+    AccessRight: AccessRight!
+}

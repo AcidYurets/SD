@@ -115,8 +115,8 @@ func TestEventService_CreateWithInvitations(t *testing.T) {
 		IsWholeDay:  false,
 		TagUuids:    []string{"Тег"},
 	}
-	createEventInvs := ev_dto.CreateEventInvitations{
-		&ev_dto.CreateEventInvitation{
+	createEventInvs := ev_dto.CreateInvitations{
+		&ev_dto.CreateInvitation{
 			UserUuid:        "123e4567-e89b-12d3-a456-426655440000",
 			AccessRightCode: "r",
 		},
@@ -171,7 +171,7 @@ func TestEventService_CreateWithInvitations(t *testing.T) {
 	iRepo.EXPECT().CreateBulk(ctx, createInvs).Return(createdInvs, nil)
 	eRepo.EXPECT().GetByUuid(ctx, uuid).Return(expectedEvent, nil)
 
-	event, err := service.CreateWithInvitations(ctx, createEvent, createEventInvs)
+	event, err := service.Create(ctx, createEvent, createEventInvs)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedEvent, event)
 }
@@ -186,8 +186,8 @@ func TestEventService_AddInvitations(t *testing.T) {
 
 	uuid := "123e4567-e89b-12d3-a456-426655440044"
 
-	createEventInvs := ev_dto.CreateEventInvitations{
-		&ev_dto.CreateEventInvitation{
+	createEventInvs := ev_dto.CreateInvitations{
+		&ev_dto.CreateInvitation{
 			UserUuid:        "123e4567-e89b-12d3-a456-426655440000",
 			AccessRightCode: "r",
 		},
@@ -242,8 +242,8 @@ func TestEventService_Update(t *testing.T) {
 		IsWholeDay:  false,
 		TagUuids:    []string{"Тег"},
 	}
-	createEventInvs := ev_dto.CreateEventInvitations{
-		&ev_dto.CreateEventInvitation{
+	createEventInvs := ev_dto.CreateInvitations{
+		&ev_dto.CreateInvitation{
 			UserUuid:        "123e4567-e89b-12d3-a456-426655440000",
 			AccessRightCode: "r",
 		},

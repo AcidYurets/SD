@@ -6,8 +6,16 @@ package resolvers
 
 import (
 	"calend/internal/modules/domain/auth/dto"
+	dto1 "calend/internal/modules/domain/user/dto"
 	"context"
 )
+
+// SingUp is the resolver for the SingUp field.
+func (r *mutationResolver) SingUp(ctx context.Context, newUser dto.NewUser) (*dto1.User, error) {
+	user, err := r.authService.SignUp(ctx, &newUser)
+
+	return user, err
+}
 
 // Login is the resolver for the Login field.
 func (r *queryResolver) Login(ctx context.Context, credentials dto.UserCredentials) (*dto.JWT, error) {
