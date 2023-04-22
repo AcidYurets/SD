@@ -5,7 +5,7 @@ services:
     build: .
     container_name: app-calend
     ports:
-      - "4040:4040"
+      - "4040:8080"
     env_file:
       - .env
 

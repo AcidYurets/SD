@@ -31,9 +31,15 @@ func InvokeServer(r *mux.Router, config config.Config, logger *zap.Logger, lc fx
 		Handler: r,
 	}
 
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("pong"))
+	}).Methods("GET", "POST", "HEAD", "OPTIONS")
+
 	lc.Append(fx.Hook{
 		OnStart: func(context.Context) error {
-			logger.Info("Starting HTTP server")
+			logger.Info("Starting HTTP server",
+				zap.String("host", config.HTTPServerHost),
+				zap.String("port", config.HTTPServerPort))
 			go func() {
 				if err := server.ListenAndServe(); err != nil {
 					logger.Sugar().Error(err)

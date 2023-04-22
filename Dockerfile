@@ -1,4 +1,4 @@
-FROM golang:1.20
+FROM golang:1.20-alpine
 WORKDIR /build
 
 COPY . .
@@ -6,7 +6,7 @@ COPY . .
 RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -o app cmd/server/main.go
 
-EXPOSE 4040
+EXPOSE 8080
 
 CMD ["./app"]
 
