@@ -6,8 +6,10 @@ import (
 	"calend/internal/models/session"
 	"calend/internal/modules/domain/event/dto"
 	tag_dto "calend/internal/modules/domain/tag/dto"
+	"calend/internal/modules/logger"
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 )
 
@@ -224,5 +226,9 @@ func (r *EventService) checkAvailable(ctx context.Context, eventUuid string, opC
 		}
 	}
 
+	logger.GetFromCtx(ctx).Warn("недостаточно прав",
+		zap.String("event_uuid", eventUuid),
+		zap.String("operation_code", string(opCode)),
+	)
 	return fmt.Errorf("%w: код операции = <%s>", err_const.ErrAccessDenied, opCode)
 }

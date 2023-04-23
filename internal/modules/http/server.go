@@ -19,7 +19,7 @@ func NewRouter() *mux.Router {
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "HEAD", "OPTIONS"},
-		Debug:            true,
+		Debug:            false,
 	}).Handler)
 
 	return r
