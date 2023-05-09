@@ -5,16 +5,24 @@ services:
     build: .
     container_name: app-calend
     ports:
-      - "4040:8080"
+      - "8080:8080"
     env_file:
       - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   postgres:
-    image: postgres:13
+    image: postgres:15
     container_name: postgres-calend
     environment:
       POSTGRES_PASSWORD: passw0rd
       PG_PASSWORD: passw0rd
       POSTGRES_DB: server_db
     ports:
-      - "5432:5432"
+      - "15000:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -p 5432" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5

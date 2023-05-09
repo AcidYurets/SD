@@ -11,8 +11,7 @@ import (
 	_ "calend/internal/modules/db/ent/runtime"
 )
 
-// //go:generate go run -mod=mod entgo.io/ent/cmd/ent generate --target ./ent --template ./templates ./schema
-//go:generate go run -mod=mod entgo.io/ent/cmd/ent generate --target ./ent --feature intercept,schema/snapshot ./schema
+//go:generate go run -mod=mod entgo.io/ent/cmd/ent generate --target ./ent --feature  sql/execquery,intercept,schema/snapshot ./schema
 
 func NewDBClient(cfg config.Config, logger *zap.Logger) (*ent.Client, error) {
 	client, err := connectDB(cfg, logger)
@@ -33,6 +32,11 @@ func InvokeDBClient(
 		if err := client.Schema.Create(context.Background()); err != nil {
 			return fmt.Errorf("ошибка при миграции: %w", err)
 		}
+	}
+
+	_, err := client.ExecContext(context.Background(), migrationQuery)
+	if err != nil {
+		return err
 	}
 
 	lifecycle.Append(fx.Hook{

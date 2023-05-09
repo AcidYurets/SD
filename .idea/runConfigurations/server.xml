@@ -4,7 +4,7 @@
     <working_directory value="$PROJECT_DIR$" />
     <envs>
       <env name="AUTO_MIGRATE" value="true" />
-      <env name="DB_CONN_STRING" value="host=localhost port=5432 user=postgres dbname=server_db password=passw0rd sslmode=disable" />
+      <env name="DB_CONN_STRING" value="host=localhost port=15000 user=postgres dbname=server_db password=passw0rd sslmode=disable" />
       <env name="DB_DRIVER" value="postgres" />
       <env name="HTTP_SERVER_HOST" value="[::]" />
       <env name="HTTP_SERVER_PORT" value="4040" />

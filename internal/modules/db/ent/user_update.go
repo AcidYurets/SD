@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"calend/internal/models/roles"
 	"calend/internal/modules/db/ent/event"
 	"calend/internal/modules/db/ent/invitation"
 	"calend/internal/modules/db/ent/predicate"
@@ -71,6 +72,12 @@ func (uu *UserUpdate) SetLogin(s string) *UserUpdate {
 // SetPasswordHash sets the "password_hash" field.
 func (uu *UserUpdate) SetPasswordHash(s string) *UserUpdate {
 	uu.mutation.SetPasswordHash(s)
+	return uu
+}
+
+// SetRole sets the "role" field.
+func (uu *UserUpdate) SetRole(r roles.Type) *UserUpdate {
+	uu.mutation.SetRole(r)
 	return uu
 }
 
@@ -219,6 +226,9 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := uu.mutation.PasswordHash(); ok {
 		_spec.SetField(user.FieldPasswordHash, field.TypeString, value)
+	}
+	if value, ok := uu.mutation.Role(); ok {
+		_spec.SetField(user.FieldRole, field.TypeString, value)
 	}
 	if uu.mutation.InvitationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -371,6 +381,12 @@ func (uuo *UserUpdateOne) SetLogin(s string) *UserUpdateOne {
 // SetPasswordHash sets the "password_hash" field.
 func (uuo *UserUpdateOne) SetPasswordHash(s string) *UserUpdateOne {
 	uuo.mutation.SetPasswordHash(s)
+	return uuo
+}
+
+// SetRole sets the "role" field.
+func (uuo *UserUpdateOne) SetRole(r roles.Type) *UserUpdateOne {
+	uuo.mutation.SetRole(r)
 	return uuo
 }
 
@@ -549,6 +565,9 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	}
 	if value, ok := uuo.mutation.PasswordHash(); ok {
 		_spec.SetField(user.FieldPasswordHash, field.TypeString, value)
+	}
+	if value, ok := uuo.mutation.Role(); ok {
+		_spec.SetField(user.FieldRole, field.TypeString, value)
 	}
 	if uuo.mutation.InvitationsCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -10,8 +10,8 @@ import (
 	"context"
 )
 
-// SingUp is the resolver for the SingUp field.
-func (r *mutationResolver) SingUp(ctx context.Context, newUser dto.NewUser) (*dto1.User, error) {
+// SignUp is the resolver for the SignUp field.
+func (r *mutationResolver) SignUp(ctx context.Context, newUser dto.NewUser) (*dto1.User, error) {
 	user, err := r.authService.SignUp(ctx, &newUser)
 
 	return user, err

@@ -93,7 +93,7 @@ type ComplexityRoot struct {
 		EventDelete         func(childComplexity int, id string) int
 		EventUpdate         func(childComplexity int, id string, event dto.UpdateEvent, invitations []*dto.CreateInvitation) int
 		Ping                func(childComplexity int) int
-		SingUp              func(childComplexity int, newUser dto1.NewUser) int
+		SignUp              func(childComplexity int, newUser dto1.NewUser) int
 		TagCreate           func(childComplexity int, tag dto2.CreateTag) int
 		TagDelete           func(childComplexity int, id string) int
 		TagRestore          func(childComplexity int, id string) int
@@ -150,7 +150,7 @@ type InvitationResolver interface {
 }
 type MutationResolver interface {
 	Ping(ctx context.Context) (string, error)
-	SingUp(ctx context.Context, newUser dto1.NewUser) (*dto3.User, error)
+	SignUp(ctx context.Context, newUser dto1.NewUser) (*dto3.User, error)
 	EventCreate(ctx context.Context, event dto.CreateEvent, invitations []*dto.CreateInvitation) (*dto.Event, error)
 	EventAddInvitations(ctx context.Context, id string, invitations []*dto.CreateInvitation) (*dto.Event, error)
 	EventUpdate(ctx context.Context, id string, event dto.UpdateEvent, invitations []*dto.CreateInvitation) (*dto.Event, error)
@@ -368,17 +368,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.Ping(childComplexity), true
 
-	case "Mutation.SingUp":
-		if e.complexity.Mutation.SingUp == nil {
+	case "Mutation.SignUp":
+		if e.complexity.Mutation.SignUp == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_SingUp_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_SignUp_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SingUp(childComplexity, args["newUser"].(dto1.NewUser)), true
+		return e.complexity.Mutation.SignUp(childComplexity, args["newUser"].(dto1.NewUser)), true
 
 	case "Mutation.TagCreate":
 		if e.complexity.Mutation.TagCreate == nil {
@@ -741,7 +741,7 @@ input UserCredentials @goModel(model: "calend/internal/modules/domain/auth/dto.U
 }
 
 extend type Mutation {
-    SingUp(newUser: NewUser!): User!
+    SignUp(newUser: NewUser!): User!
 }
 
 input NewUser @goModel(model: "calend/internal/modules/domain/auth/dto.NewUser") {
@@ -1093,7 +1093,7 @@ func (ec *executionContext) field_Mutation_EventUpdate_args(ctx context.Context,
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_SingUp_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_SignUp_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 dto1.NewUser
@@ -2204,8 +2204,8 @@ func (ec *executionContext) fieldContext_Mutation_ping(ctx context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_SingUp(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_SingUp(ctx, field)
+func (ec *executionContext) _Mutation_SignUp(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_SignUp(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2218,7 +2218,7 @@ func (ec *executionContext) _Mutation_SingUp(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().SingUp(rctx, fc.Args["newUser"].(dto1.NewUser))
+		return ec.resolvers.Mutation().SignUp(rctx, fc.Args["newUser"].(dto1.NewUser))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2235,7 +2235,7 @@ func (ec *executionContext) _Mutation_SingUp(ctx context.Context, field graphql.
 	return ec.marshalNUser2ᚖcalendᚋinternalᚋmodulesᚋdomainᚋuserᚋdtoᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_SingUp(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_SignUp(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -2260,7 +2260,7 @@ func (ec *executionContext) fieldContext_Mutation_SingUp(ctx context.Context, fi
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_SingUp_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_SignUp_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -6962,10 +6962,10 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "SingUp":
+		case "SignUp":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_SingUp(ctx, field)
+				return ec._Mutation_SignUp(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {

@@ -3,6 +3,7 @@
 package user
 
 import (
+	"calend/internal/models/roles"
 	"calend/internal/modules/db/ent/predicate"
 	"time"
 
@@ -93,6 +94,12 @@ func Login(v string) predicate.User {
 // PasswordHash applies equality check predicate on the "password_hash" field. It's identical to PasswordHashEQ.
 func PasswordHash(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldPasswordHash, v))
+}
+
+// Role applies equality check predicate on the "role" field. It's identical to RoleEQ.
+func Role(v roles.Type) predicate.User {
+	vc := string(v)
+	return predicate.User(sql.FieldEQ(FieldRole, vc))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -418,6 +425,90 @@ func PasswordHashEqualFold(v string) predicate.User {
 // PasswordHashContainsFold applies the ContainsFold predicate on the "password_hash" field.
 func PasswordHashContainsFold(v string) predicate.User {
 	return predicate.User(sql.FieldContainsFold(FieldPasswordHash, v))
+}
+
+// RoleEQ applies the EQ predicate on the "role" field.
+func RoleEQ(v roles.Type) predicate.User {
+	vc := string(v)
+	return predicate.User(sql.FieldEQ(FieldRole, vc))
+}
+
+// RoleNEQ applies the NEQ predicate on the "role" field.
+func RoleNEQ(v roles.Type) predicate.User {
+	vc := string(v)
+	return predicate.User(sql.FieldNEQ(FieldRole, vc))
+}
+
+// RoleIn applies the In predicate on the "role" field.
+func RoleIn(vs ...roles.Type) predicate.User {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = string(vs[i])
+	}
+	return predicate.User(sql.FieldIn(FieldRole, v...))
+}
+
+// RoleNotIn applies the NotIn predicate on the "role" field.
+func RoleNotIn(vs ...roles.Type) predicate.User {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = string(vs[i])
+	}
+	return predicate.User(sql.FieldNotIn(FieldRole, v...))
+}
+
+// RoleGT applies the GT predicate on the "role" field.
+func RoleGT(v roles.Type) predicate.User {
+	vc := string(v)
+	return predicate.User(sql.FieldGT(FieldRole, vc))
+}
+
+// RoleGTE applies the GTE predicate on the "role" field.
+func RoleGTE(v roles.Type) predicate.User {
+	vc := string(v)
+	return predicate.User(sql.FieldGTE(FieldRole, vc))
+}
+
+// RoleLT applies the LT predicate on the "role" field.
+func RoleLT(v roles.Type) predicate.User {
+	vc := string(v)
+	return predicate.User(sql.FieldLT(FieldRole, vc))
+}
+
+// RoleLTE applies the LTE predicate on the "role" field.
+func RoleLTE(v roles.Type) predicate.User {
+	vc := string(v)
+	return predicate.User(sql.FieldLTE(FieldRole, vc))
+}
+
+// RoleContains applies the Contains predicate on the "role" field.
+func RoleContains(v roles.Type) predicate.User {
+	vc := string(v)
+	return predicate.User(sql.FieldContains(FieldRole, vc))
+}
+
+// RoleHasPrefix applies the HasPrefix predicate on the "role" field.
+func RoleHasPrefix(v roles.Type) predicate.User {
+	vc := string(v)
+	return predicate.User(sql.FieldHasPrefix(FieldRole, vc))
+}
+
+// RoleHasSuffix applies the HasSuffix predicate on the "role" field.
+func RoleHasSuffix(v roles.Type) predicate.User {
+	vc := string(v)
+	return predicate.User(sql.FieldHasSuffix(FieldRole, vc))
+}
+
+// RoleEqualFold applies the EqualFold predicate on the "role" field.
+func RoleEqualFold(v roles.Type) predicate.User {
+	vc := string(v)
+	return predicate.User(sql.FieldEqualFold(FieldRole, vc))
+}
+
+// RoleContainsFold applies the ContainsFold predicate on the "role" field.
+func RoleContainsFold(v roles.Type) predicate.User {
+	vc := string(v)
+	return predicate.User(sql.FieldContainsFold(FieldRole, vc))
 }
 
 // HasInvitations applies the HasEdge predicate on the "invitations" edge.

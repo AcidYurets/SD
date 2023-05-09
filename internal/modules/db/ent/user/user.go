@@ -27,6 +27,8 @@ const (
 	FieldLogin = "login"
 	// FieldPasswordHash holds the string denoting the password_hash field in the database.
 	FieldPasswordHash = "password_hash"
+	// FieldRole holds the string denoting the role field in the database.
+	FieldRole = "role"
 	// EdgeInvitations holds the string denoting the invitations edge name in mutations.
 	EdgeInvitations = "invitations"
 	// EdgeCreatedEvents holds the string denoting the created_events edge name in mutations.
@@ -58,6 +60,7 @@ var Columns = []string{
 	FieldPhone,
 	FieldLogin,
 	FieldPasswordHash,
+	FieldRole,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -124,6 +127,11 @@ func ByLogin(opts ...sql.OrderTermOption) Order {
 // ByPasswordHash orders the results by the password_hash field.
 func ByPasswordHash(opts ...sql.OrderTermOption) Order {
 	return sql.OrderByField(FieldPasswordHash, opts...).ToFunc()
+}
+
+// ByRole orders the results by the role field.
+func ByRole(opts ...sql.OrderTermOption) Order {
+	return sql.OrderByField(FieldRole, opts...).ToFunc()
 }
 
 // ByInvitationsCount orders the results by invitations count.

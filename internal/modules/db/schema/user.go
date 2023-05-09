@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"calend/internal/models/roles"
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -23,7 +24,7 @@ func (User) Fields() []ent.Field {
 		field.String("phone").Unique(),
 		field.String("login").Unique(),
 		field.String("password_hash"),
-		field.String("role"),
+		field.String("role").GoType(roles.Type("")),
 	}
 }
 

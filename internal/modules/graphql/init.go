@@ -1,6 +1,7 @@
 package graphql
 
 import (
+	"calend/internal/models/roles"
 	"calend/internal/models/session"
 	"calend/internal/modules/domain/auth/service"
 	"calend/internal/modules/graphql/generated"
@@ -69,7 +70,10 @@ func injectSession(permittedOperations []string, authService *service.AuthServic
 			}
 		}
 
+		// Устанавливаем в контекст сессию
 		ctx = session.SetSessionToCtx(ctx, *ss)
+		// Устанавливаем в контекст необходимость смены пользователя перед каждым запросом
+		ctx = roles.SetNeedChangeToCtx(ctx)
 
 		return next(ctx)
 	}
