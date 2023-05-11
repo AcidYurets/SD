@@ -51,6 +51,7 @@ func (r *UserRepo) Create(ctx context.Context, dtm *dto.CreateUser) (*dto.User, 
 		SetPhone(dtm.Phone).
 		SetLogin(dtm.Login).
 		SetPasswordHash(dtm.PasswordHash).
+		SetRole(dtm.Role).
 		Save(ctx)
 	if err != nil {
 		return nil, db.WrapError(err)
@@ -60,10 +61,21 @@ func (r *UserRepo) Create(ctx context.Context, dtm *dto.CreateUser) (*dto.User, 
 }
 
 func (r *UserRepo) Update(ctx context.Context, uuid string, dtm *dto.UpdateUser) (*dto.User, error) {
-	user, err := r.client.User.UpdateOneID(uuid).
-		SetPhone(dtm.Phone).
-		SetLogin(dtm.Login).
-		Save(ctx)
+	// TODO: Вместо этой фигни написать template для опциональной установки значения
+
+	updateQuery := r.client.User.UpdateOneID(uuid)
+
+	if dtm.Phone != nil {
+		updateQuery.SetPhone(*dtm.Phone)
+	}
+	if dtm.Login != nil {
+		updateQuery.SetLogin(*dtm.Login)
+	}
+	if dtm.Role != nil {
+		updateQuery.SetRole(*dtm.Role)
+	}
+
+	user, err := updateQuery.Save(ctx)
 	if err != nil {
 		return nil, db.WrapError(err)
 	}
@@ -98,6 +110,7 @@ func ToUserDTO(model *ent.User) *dto.User {
 		Phone:        model.Phone,
 		Login:        model.Login,
 		PasswordHash: model.PasswordHash,
+		Role:         model.Role,
 	}
 }
 

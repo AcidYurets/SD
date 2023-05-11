@@ -41,11 +41,22 @@ func (s Type) isValid() bool {
 
 type needChangeKey struct{}
 
-func CheckNeedChangeInCtx(ctx context.Context) bool {
+func CheckNeedChange(ctx context.Context) bool {
 	changeNeeded, ok := ctx.Value(needChangeKey{}).(bool)
 	return ok && changeNeeded
 }
 
-func SetNeedChangeToCtx(ctx context.Context) context.Context {
+func SetNeedChange(ctx context.Context) context.Context {
 	return context.WithValue(ctx, needChangeKey{}, true)
+}
+
+type useSuperUserKey struct{}
+
+func CheckUseSuperUser(ctx context.Context) bool {
+	useSuperuser, ok := ctx.Value(useSuperUserKey{}).(bool)
+	return ok && useSuperuser
+}
+
+func SetUseSuperUser(ctx context.Context) context.Context {
+	return context.WithValue(ctx, useSuperUserKey{}, true)
 }

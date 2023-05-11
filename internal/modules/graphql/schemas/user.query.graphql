@@ -5,6 +5,9 @@ extend type Query {
 
 extend type Mutation {
     UserUpdateSelf(updateUser: UpdateUser!): User!
+    UserUpdate(id: ID!, updateUser: UpdateUser!): User!
+    UserDelete(id: ID!): ID!
+    UserChangeRole(id: ID!, newRole: UserRole!): User!
 }
 
 input UpdateUser @goModel(model: "calend/internal/modules/domain/user/dto.UpdateUser") {

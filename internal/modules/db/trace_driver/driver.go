@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
 	"fmt"
 	"github.com/google/uuid"
 	"time"
@@ -63,16 +64,23 @@ func errorFunc(msg string) func() string {
 }
 
 func changeRole(ctx context.Context, db dialect.ExecQuerier) error {
-	currentUserUuid, err := session.GetUserUuidFromCtx(ctx)
-	if err != nil {
-		return err
+	var prepQuery string
+	args := make([]any, 0)
+
+	if roles.CheckNeedChange(ctx) {
+		currentUserUuid, err := session.GetUserUuidFromCtx(ctx)
+		if err != nil {
+			return err
+		}
+
+		prepQuery = "CALL before_each_query($1);\n"
+		args = append(args, currentUserUuid)
+	}
+	if roles.CheckUseSuperUser(ctx) {
+		prepQuery = "SET ROLE superuser;\n"
 	}
 
-	prepQuery := "CALL before_each_query($1);\n"
-	args := make([]any, 0)
-	args = append(args, currentUserUuid)
-
-	err = db.Exec(ctx, prepQuery, args, nil)
+	err := db.Exec(ctx, prepQuery, args, nil)
 	if err != nil {
 		return err
 	}
@@ -91,20 +99,20 @@ func (d *TraceDriver) Exec(ctx context.Context, query string, args, v any) error
 	}
 
 	begin := time.Now()
-	var err error
 
-	if !roles.CheckNeedChangeInCtx(ctx) {
-		err = d.Driver.Exec(ctx, query, args, v)
-	} else {
-		err = withTx(ctx, d.Driver, func(tx dialect.Tx) error {
-			err := changeRole(ctx, tx)
-			if err != nil {
-				return err
-			}
-
-			return tx.Exec(ctx, query, args, v)
-		})
+	conn, err := d.Driver.(*entsql.Driver).DB().Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("не удалось получить соединение: %w", err)
 	}
+
+	entConn := entsql.Conn{ExecQuerier: conn}
+
+	err = changeRole(ctx, entConn)
+	if err != nil {
+		return err
+	}
+
+	err = entConn.Exec(ctx, query, args, v)
 	d.logger.Trace(begin, f, err, nil)
 
 	return err
@@ -121,22 +129,7 @@ func (d *TraceDriver) ExecContext(ctx context.Context, query string, args ...any
 
 	f := explainFunc(query, args)
 	begin := time.Now()
-	var err error
-	var res sql.Result
-
-	if !roles.CheckNeedChangeInCtx(ctx) {
-		res, err = drv.ExecContext(ctx, query, args...)
-	} else {
-		err = withTx(ctx, d.Driver, func(tx dialect.Tx) error {
-			err := changeRole(ctx, tx)
-			if err != nil {
-				return err
-			}
-
-			res, err = drv.ExecContext(ctx, query, args...)
-			return err
-		})
-	}
+	res, err := drv.ExecContext(ctx, query, args...)
 	d.logger.Trace(begin, f, err, nil)
 
 	return res, err
@@ -153,20 +146,20 @@ func (d *TraceDriver) Query(ctx context.Context, query string, args, v any) erro
 	}
 
 	begin := time.Now()
-	var err error
 
-	if !roles.CheckNeedChangeInCtx(ctx) {
-		err = d.Driver.Query(ctx, query, args, v)
-	} else {
-		err = withTx(ctx, d, func(tx dialect.Tx) error {
-			err := changeRole(ctx, tx)
-			if err != nil {
-				return err
-			}
-
-			return tx.Query(ctx, query, args, v)
-		})
+	conn, err := d.Driver.(*entsql.Driver).DB().Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("не удалось получить соединение: %w", err)
 	}
+
+	entConn := entsql.Conn{ExecQuerier: conn}
+
+	err = changeRole(ctx, entConn)
+	if err != nil {
+		return err
+	}
+
+	err = entConn.Query(ctx, query, args, v)
 	d.logger.Trace(begin, f, err, nil)
 
 	return err
@@ -183,22 +176,7 @@ func (d *TraceDriver) QueryContext(ctx context.Context, query string, args ...an
 
 	f := explainFunc(query, args)
 	begin := time.Now()
-	var err error
-	var res *sql.Rows
-
-	if !roles.CheckNeedChangeInCtx(ctx) {
-		res, err = drv.QueryContext(ctx, query, args...)
-	} else {
-		err = withTx(ctx, d.Driver, func(tx dialect.Tx) error {
-			err := changeRole(ctx, tx)
-			if err != nil {
-				return err
-			}
-
-			res, err = drv.QueryContext(ctx, query, args...)
-			return err
-		})
-	}
+	res, err := drv.QueryContext(ctx, query, args...)
 	d.logger.Trace(begin, f, err, nil)
 
 	return res, err
@@ -255,14 +233,12 @@ func (d *DebugTx) Exec(ctx context.Context, query string, args, v any) error {
 	}
 
 	begin := time.Now()
-	var err error
 
-	if roles.CheckNeedChangeInCtx(ctx) {
-		err := changeRole(ctx, d.Tx)
-		if err != nil {
-			return err
-		}
+	err := changeRole(ctx, d.Tx)
+	if err != nil {
+		return err
 	}
+
 	err = d.Tx.Exec(ctx, query, args, v)
 	d.logger.Trace(begin, f, err, map[string]any{"tx-id": d.id})
 
@@ -280,14 +256,12 @@ func (d *DebugTx) ExecContext(ctx context.Context, query string, args ...any) (s
 
 	f := explainFunc(query, args)
 	begin := time.Now()
-	var err error
 
-	if roles.CheckNeedChangeInCtx(ctx) {
-		err := changeRole(ctx, d.Tx)
-		if err != nil {
-			return nil, err
-		}
+	err := changeRole(ctx, d.Tx)
+	if err != nil {
+		return nil, err
 	}
+
 	res, err := drv.ExecContext(ctx, query, args...)
 	d.logger.Trace(begin, f, err, map[string]any{"tx-id": d.id})
 
@@ -305,14 +279,12 @@ func (d *DebugTx) Query(ctx context.Context, query string, args, v any) error {
 	}
 
 	begin := time.Now()
-	var err error
 
-	if roles.CheckNeedChangeInCtx(ctx) {
-		err := changeRole(ctx, d.Tx)
-		if err != nil {
-			return err
-		}
+	err := changeRole(ctx, d.Tx)
+	if err != nil {
+		return err
 	}
+
 	err = d.Tx.Query(ctx, query, args, v)
 	d.logger.Trace(begin, f, err, map[string]any{"tx-id": d.id})
 
@@ -330,14 +302,12 @@ func (d *DebugTx) QueryContext(ctx context.Context, query string, args ...any) (
 
 	f := explainFunc(query, args)
 	begin := time.Now()
-	var err error
 
-	if roles.CheckNeedChangeInCtx(ctx) {
-		err := changeRole(ctx, d.Tx)
-		if err != nil {
-			return nil, err
-		}
+	err := changeRole(ctx, d.Tx)
+	if err != nil {
+		return nil, err
 	}
+
 	res, err := drv.QueryContext(ctx, query, args...)
 	d.logger.Trace(begin, f, err, map[string]any{"tx-id": d.id})
 
@@ -356,27 +326,4 @@ func (d *DebugTx) Rollback() error {
 	d.logger.Info("transaction rollbacked", map[string]any{"tx-id": d.id})
 
 	return d.Tx.Rollback()
-}
-
-func withTx(ctx context.Context, db dialect.Driver, fn func(tx dialect.Tx) error) error {
-	tx, err := db.Tx(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if v := recover(); v != nil {
-			_ = tx.Rollback()
-			panic(v)
-		}
-	}()
-	if err := fn(tx); err != nil {
-		if rerr := tx.Rollback(); rerr != nil {
-			err = fmt.Errorf("%w: rolling back transaction: %v", err, rerr)
-		}
-		return err
-	}
-	//if err := tx.Commit(); err != nil {
-	//	return fmt.Errorf("committing transaction: %w", err)
-	//}
-	return nil
 }

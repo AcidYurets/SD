@@ -51,6 +51,8 @@ func injectSession(permittedOperations []string, authService *service.AuthServic
 		query := opCtx.OperationName
 
 		if slice.Contains(permittedOperations, query) {
+			// Устанавливаем в контекст необходимость использовать суперпользователю в Postgres
+			ctx = roles.SetUseSuperUser(ctx)
 			// Разрешаем пройти дальне без авторизации
 			return next(ctx)
 		}
@@ -73,7 +75,7 @@ func injectSession(permittedOperations []string, authService *service.AuthServic
 		// Устанавливаем в контекст сессию
 		ctx = session.SetSessionToCtx(ctx, *ss)
 		// Устанавливаем в контекст необходимость смены пользователя перед каждым запросом
-		ctx = roles.SetNeedChangeToCtx(ctx)
+		ctx = roles.SetNeedChange(ctx)
 
 		return next(ctx)
 	}

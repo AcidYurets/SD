@@ -2,4 +2,11 @@ type User @goModel(model: "calend/internal/modules/domain/user/dto.User") {
     Uuid: ID!
     Login: String!
     Phone: String!
+    Role: UserRole!
+}
+
+enum UserRole @goModel(model: "calend/internal/models/roles.Type") {
+    simple_user
+    premium_user
+    admin
 }

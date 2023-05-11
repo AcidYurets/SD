@@ -1,7 +1,7 @@
 package service
 
 import (
-	"calend/internal/models/session"
+	"calend/internal/models/roles"
 	"calend/internal/modules/domain/user/dto"
 	"context"
 )
@@ -34,16 +34,15 @@ func (r *UserService) List(ctx context.Context) (dto.Users, error) {
 	return r.repo.List(ctx)
 }
 
-func (r *UserService) UpdateSelf(ctx context.Context, dtm *dto.UpdateUser) (*dto.User, error) {
-	userUuid, err := session.GetUserUuidFromCtx(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return r.repo.Update(ctx, userUuid, dtm)
+func (r *UserService) Update(ctx context.Context, uuid string, dtm *dto.UpdateUser) (*dto.User, error) {
+	return r.repo.Update(ctx, uuid, dtm)
 }
 
-func (r *UserService) Update(ctx context.Context, uuid string, dtm *dto.UpdateUser) (*dto.User, error) {
+func (r *UserService) ChangeRole(ctx context.Context, uuid string, role roles.Type) (*dto.User, error) {
+	dtm := &dto.UpdateUser{
+		Role: &role,
+	}
+
 	return r.repo.Update(ctx, uuid, dtm)
 }
 

@@ -19,7 +19,7 @@ create role premium_user;
 grant all on all tables in schema public to admin;
 
 -- ===== Простой пользователь =====
-grant select, update on users to simple_user;
+grant select, update (login, phone, password_hash) on users to simple_user;
 grant select on access_rights to simple_user;
 grant all on events to simple_user;
 grant all on invitations to simple_user;
@@ -27,7 +27,7 @@ grant all on events_tags to simple_user;
 grant select on tags to simple_user;
 
 -- ===== Премиум пользователь =====
-grant select, update on users to premium_user;
+grant select, update (login, phone, password_hash) on users to premium_user;
 grant select on access_rights to premium_user;
 grant all on events to premium_user;
 grant all on invitations to premium_user;

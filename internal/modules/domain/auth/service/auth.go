@@ -2,6 +2,7 @@ package service
 
 import (
 	"calend/internal/models/err_const"
+	"calend/internal/models/roles"
 	"calend/internal/models/session"
 	"calend/internal/modules/config"
 	"calend/internal/modules/domain/auth/dto"
@@ -129,10 +130,13 @@ func (r *AuthService) SignUp(ctx context.Context, newUser *dto.NewUser) (*user_d
 		return nil, err
 	}
 
+	// Новые пользователи получают роль простого пользователя
+	role := roles.SimpleUser
 	createUser := &user_dto.CreateUser{
 		Phone:        newUser.Phone,
 		Login:        newUser.Login,
 		PasswordHash: passwordHash,
+		Role:         role,
 	}
 
 	// Создаем пользователя
