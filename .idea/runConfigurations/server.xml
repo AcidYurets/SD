@@ -6,8 +6,11 @@
       <env name="AUTO_MIGRATE" value="true" />
       <env name="DB_CONN_STRING" value="host=localhost port=15000 user=postgres dbname=server_db password=passw0rd sslmode=disable" />
       <env name="DB_DRIVER" value="postgres" />
+      <env name="ELASTIC_HOST" value="localhost" />
+      <env name="ELASTIC_PORT" value="15001" />
       <env name="HTTP_SERVER_HOST" value="[::]" />
       <env name="HTTP_SERVER_PORT" value="4040" />
+      <env name="SEARCH_SERVICE" value="elastic" />
       <env name="SECRET" value="123" />
       <env name="TRACE_SQL_COMMANDS" value="true" />
     </envs>

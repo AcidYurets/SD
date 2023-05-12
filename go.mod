@@ -12,7 +12,9 @@ require (
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.10.8
+	github.com/olivere/elastic/v7 v7.0.32
 	github.com/rs/cors v1.9.0
+	github.com/spf13/cast v1.5.0
 	github.com/stretchr/testify v1.8.2
 	github.com/vektah/gqlparser/v2 v2.5.1
 	go.uber.org/fx v1.19.2
@@ -33,7 +35,8 @@ require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.1 // indirect
 	github.com/hashicorp/hcl/v2 v2.13.0 // indirect
-	github.com/kr/pretty v0.3.0 // indirect
+	github.com/josharian/intern v1.0.0 // indirect
+	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect

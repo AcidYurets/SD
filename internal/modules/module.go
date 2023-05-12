@@ -6,6 +6,7 @@ import (
 	"calend/internal/modules/console"
 	"calend/internal/modules/db"
 	"calend/internal/modules/domain"
+	"calend/internal/modules/elastic"
 	"calend/internal/modules/graphql"
 	"calend/internal/modules/http"
 	"calend/internal/modules/logger"
@@ -20,6 +21,7 @@ var (
 		logger.Module,
 		config.Module,
 		db.Module,
+		elastic.Module,
 		http.Module,
 		graphql.Module,
 
@@ -35,6 +37,7 @@ var (
 		logger.Invokables,
 		config.Invokables,
 		db.Invokables,
+		elastic.Invokables,
 		http.Invokables,
 		graphql.Invokables,
 

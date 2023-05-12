@@ -14,6 +14,10 @@ type Config struct {
 	DBDriver     string `envconfig:"DB_DRIVER" default:"postgres"`
 	DBConnString string `envconfig:"DB_CONN_STRING"`
 
+	ElasticHost string `envconfig:"ELASTIC_HOST" default:"elastic"`
+	ElasticPort string `envconfig:"ELASTIC_PORT" default:"9200"`
+
+	SearchService    string `envconfig:"SEARCH_SERVICE" default:"postgres" validate:"oneof=postgres elastic"`
 	SQLSlowThreshold int    `envconfig:"SQL_SLOW_THRESHOLD" default:"600"`
 	TraceSQLCommands bool   `envconfig:"TRACE_SQL_COMMANDS" default:"false"`
 	AutoMigrate      bool   `envconfig:"AUTO_MIGRATE" default:"false"`

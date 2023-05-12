@@ -125,6 +125,29 @@ func (r *EventRepo) Delete(ctx context.Context, uuid string) error {
 	return nil
 }
 
+func (r *EventRepo) SubSet(ctx context.Context, offset, limit int, uuids ...string) (dto.Events, error) {
+	eventsQuery := r.client.Event.Query()
+
+	// Если переданы uuids, то ограничиваемся ими
+	if len(uuids) > 0 {
+		eventsQuery = eventsQuery.Where(event_ent.IDIn(uuids...))
+	}
+
+	events, err := eventsQuery.
+		Order(event_ent.ByID()).
+		Limit(limit).
+		Offset(offset).
+		WithInvitations().
+		WithTags().
+		WithCreator().
+		All(ctx)
+	if err != nil {
+		return nil, db.WrapError(err)
+	}
+
+	return ToEventDTOs(events), nil
+}
+
 func ToEventDTO(model *ent.Event) *dto.Event {
 	if model == nil {
 		return nil
@@ -137,6 +160,7 @@ func ToEventDTO(model *ent.Event) *dto.Event {
 		Type:        model.Type,
 		IsWholeDay:  model.IsWholeDay,
 		Invitations: ToInvitationDTOs(model.Edges.Invitations),
+		Tags:        repo.ToTagDTOs(model.Edges.Tags),
 		CreatorUuid: model.CreatorUUID,
 	}
 }

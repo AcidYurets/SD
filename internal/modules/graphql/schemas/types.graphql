@@ -1,10 +1,25 @@
+"Запросы"
 type Query {
    ping: String!
 }
 
+"Мутации"
 type Mutation {
     ping: String!
 }
 
 scalar DateTime
+
+scalar Uint
+
+type ReindexStats @goModel(model: "calend/internal/modules/elastic/reindex.Stats") {
+    StartAt: DateTime!
+    EndAt: DateTime!
+    Total: Uint!
+    Created: Uint!
+    Updated: Uint!
+    Indexed: Uint!
+    Removed: Uint!
+}
+
 

@@ -1,4 +1,4 @@
-package repo
+package repo_db
 
 import (
 	"calend/internal/modules/db"
@@ -53,13 +53,13 @@ func (r *SearchRepo) buildEventFilters(f *dto.EventFilter) []predicate.Event {
 		"name",
 		"description",
 		"type",
-		"users.login",
+		"creator.login",
 		"tags.name",
 	}
 
 	// Составляем карту для получения полей из связанных сущностей
 	wrappersMap := map[string]types.Wrapper{
-		"users.login": func(p types.Predicate) types.Predicate {
+		"creator.login": func(p types.Predicate) types.Predicate {
 			return types.Predicate(event_ent.HasCreatorWith(predicate.User(p)))
 		},
 		"tags.name": func(p types.Predicate) types.Predicate {
@@ -75,7 +75,7 @@ func (r *SearchRepo) buildEventFilters(f *dto.EventFilter) []predicate.Event {
 	builder.AddField("type", f.Type)
 	builder.AddField("is_whole_day", f.IsWholeDay)
 	builder.AddField("creator_uuid", f.CreatorUuid)
-	builder.AddField("users.login", f.CreatorLogin)
+	builder.AddField("creator.login", f.CreatorLogin)
 	builder.AddField("tags.name", f.TagName)
 	builder.AddField(strings.Join(ftsSearch, " "), f.FTSearchStr)
 

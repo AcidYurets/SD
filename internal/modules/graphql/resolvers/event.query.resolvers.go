@@ -6,8 +6,19 @@ package resolvers
 
 import (
 	"calend/internal/modules/domain/event/dto"
+	"calend/internal/modules/elastic/reindex"
 	"context"
 )
+
+// EventReindex is the resolver for the EventReindex field.
+func (r *mutationResolver) EventReindex(ctx context.Context) (*reindex.Stats, error) {
+	stats, err := r.reindexEventService.ReindexAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &stats, nil
+}
 
 // EventCreate is the resolver for the EventCreate field.
 func (r *mutationResolver) EventCreate(ctx context.Context, event dto.CreateEvent, invitations []*dto.CreateInvitation) (*dto.Event, error) {

@@ -13,6 +13,7 @@ import (
 	dto4 "calend/internal/modules/domain/search/dto"
 	dto2 "calend/internal/modules/domain/tag/dto"
 	dto3 "calend/internal/modules/domain/user/dto"
+	"calend/internal/modules/elastic/reindex"
 	"calend/internal/pkg/search/filter"
 	"calend/internal/pkg/search/paginate"
 	"calend/internal/pkg/search/sort"
@@ -92,7 +93,9 @@ type ComplexityRoot struct {
 		EventAddInvitations func(childComplexity int, id string, invitations []*dto.CreateInvitation) int
 		EventCreate         func(childComplexity int, event dto.CreateEvent, invitations []*dto.CreateInvitation) int
 		EventDelete         func(childComplexity int, id string) int
+		EventReindex        func(childComplexity int) int
 		EventUpdate         func(childComplexity int, id string, event dto.UpdateEvent, invitations []*dto.CreateInvitation) int
+		GenerateData        func(childComplexity int) int
 		Ping                func(childComplexity int) int
 		SignUp              func(childComplexity int, newUser dto1.NewUser) int
 		TagCreate           func(childComplexity int, tag dto2.CreateTag) int
@@ -118,6 +121,16 @@ type ComplexityRoot struct {
 		Tags            func(childComplexity int) int
 		User            func(childComplexity int, id string) int
 		Users           func(childComplexity int) int
+	}
+
+	ReindexStats struct {
+		Created func(childComplexity int) int
+		EndAt   func(childComplexity int) int
+		Indexed func(childComplexity int) int
+		Removed func(childComplexity int) int
+		StartAt func(childComplexity int) int
+		Total   func(childComplexity int) int
+		Updated func(childComplexity int) int
 	}
 
 	Session struct {
@@ -156,6 +169,8 @@ type InvitationResolver interface {
 type MutationResolver interface {
 	Ping(ctx context.Context) (string, error)
 	SignUp(ctx context.Context, newUser dto1.NewUser) (*dto3.User, error)
+	GenerateData(ctx context.Context) (*string, error)
+	EventReindex(ctx context.Context) (*reindex.Stats, error)
 	EventCreate(ctx context.Context, event dto.CreateEvent, invitations []*dto.CreateInvitation) (*dto.Event, error)
 	EventAddInvitations(ctx context.Context, id string, invitations []*dto.CreateInvitation) (*dto.Event, error)
 	EventUpdate(ctx context.Context, id string, event dto.UpdateEvent, invitations []*dto.CreateInvitation) (*dto.Event, error)
@@ -357,6 +372,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.EventDelete(childComplexity, args["id"].(string)), true
 
+	case "Mutation.EventReindex":
+		if e.complexity.Mutation.EventReindex == nil {
+			break
+		}
+
+		return e.complexity.Mutation.EventReindex(childComplexity), true
+
 	case "Mutation.EventUpdate":
 		if e.complexity.Mutation.EventUpdate == nil {
 			break
@@ -368,6 +390,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.EventUpdate(childComplexity, args["id"].(string), args["event"].(dto.UpdateEvent), args["invitations"].([]*dto.CreateInvitation)), true
+
+	case "Mutation.GenerateData":
+		if e.complexity.Mutation.GenerateData == nil {
+			break
+		}
+
+		return e.complexity.Mutation.GenerateData(childComplexity), true
 
 	case "Mutation.ping":
 		if e.complexity.Mutation.Ping == nil {
@@ -603,6 +632,55 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Users(childComplexity), true
 
+	case "ReindexStats.Created":
+		if e.complexity.ReindexStats.Created == nil {
+			break
+		}
+
+		return e.complexity.ReindexStats.Created(childComplexity), true
+
+	case "ReindexStats.EndAt":
+		if e.complexity.ReindexStats.EndAt == nil {
+			break
+		}
+
+		return e.complexity.ReindexStats.EndAt(childComplexity), true
+
+	case "ReindexStats.Indexed":
+		if e.complexity.ReindexStats.Indexed == nil {
+			break
+		}
+
+		return e.complexity.ReindexStats.Indexed(childComplexity), true
+
+	case "ReindexStats.Removed":
+		if e.complexity.ReindexStats.Removed == nil {
+			break
+		}
+
+		return e.complexity.ReindexStats.Removed(childComplexity), true
+
+	case "ReindexStats.StartAt":
+		if e.complexity.ReindexStats.StartAt == nil {
+			break
+		}
+
+		return e.complexity.ReindexStats.StartAt(childComplexity), true
+
+	case "ReindexStats.Total":
+		if e.complexity.ReindexStats.Total == nil {
+			break
+		}
+
+		return e.complexity.ReindexStats.Total(childComplexity), true
+
+	case "ReindexStats.Updated":
+		if e.complexity.ReindexStats.Updated == nil {
+			break
+		}
+
+		return e.complexity.ReindexStats.Updated(childComplexity), true
+
 	case "Session.SID":
 		if e.complexity.Session.SID == nil {
 			break
@@ -818,6 +896,11 @@ type JWT @goModel(model: "calend/internal/modules/domain/auth/dto.JWT") {
     Session: Session!
 }
 `, BuiltIn: false},
+	{Name: "../schemas/develop.query.graphql", Input: `extend type Mutation {
+    GenerateData: String
+}
+
+`, BuiltIn: false},
 	{Name: "../schemas/directives.graphql", Input: `directive @goModel(
     model: String
     models: [String!]
@@ -839,6 +922,7 @@ directive @goTag(
 }
 
 extend type Mutation {
+    EventReindex: ReindexStats!
     EventCreate(event: CreateEvent!, invitations: [CreateInvitation!]): Event!
     EventAddInvitations(id: ID!, invitations: [CreateInvitation!]): Event!
     EventUpdate(id: ID!, event: UpdateEvent!, invitations: [CreateInvitation!]): Event!
@@ -1011,15 +1095,30 @@ input UpdateTag @goModel(model: "calend/internal/modules/domain/tag/dto.UpdateTa
     Description: String!
 }
 `, BuiltIn: false},
-	{Name: "../schemas/types.graphql", Input: `type Query {
+	{Name: "../schemas/types.graphql", Input: `"Запросы"
+type Query {
    ping: String!
 }
 
+"Мутации"
 type Mutation {
     ping: String!
 }
 
 scalar DateTime
+
+scalar Uint
+
+type ReindexStats @goModel(model: "calend/internal/modules/elastic/reindex.Stats") {
+    StartAt: DateTime!
+    EndAt: DateTime!
+    Total: Uint!
+    Created: Uint!
+    Updated: Uint!
+    Indexed: Uint!
+    Removed: Uint!
+}
+
 
 `, BuiltIn: false},
 	{Name: "../schemas/user.query.graphql", Input: `extend type Query {
@@ -2393,6 +2492,107 @@ func (ec *executionContext) fieldContext_Mutation_SignUp(ctx context.Context, fi
 	if fc.Args, err = ec.field_Mutation_SignUp_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_GenerateData(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_GenerateData(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().GenerateData(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_GenerateData(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_EventReindex(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_EventReindex(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EventReindex(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*reindex.Stats)
+	fc.Result = res
+	return ec.marshalNReindexStats2ᚖcalendᚋinternalᚋmodulesᚋelasticᚋreindexᚐStats(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_EventReindex(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "StartAt":
+				return ec.fieldContext_ReindexStats_StartAt(ctx, field)
+			case "EndAt":
+				return ec.fieldContext_ReindexStats_EndAt(ctx, field)
+			case "Total":
+				return ec.fieldContext_ReindexStats_Total(ctx, field)
+			case "Created":
+				return ec.fieldContext_ReindexStats_Created(ctx, field)
+			case "Updated":
+				return ec.fieldContext_ReindexStats_Updated(ctx, field)
+			case "Indexed":
+				return ec.fieldContext_ReindexStats_Indexed(ctx, field)
+			case "Removed":
+				return ec.fieldContext_ReindexStats_Removed(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ReindexStats", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -4022,6 +4222,314 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReindexStats_StartAt(ctx context.Context, field graphql.CollectedField, obj *reindex.Stats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ReindexStats_StartAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNDateTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ReindexStats_StartAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReindexStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReindexStats_EndAt(ctx context.Context, field graphql.CollectedField, obj *reindex.Stats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ReindexStats_EndAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EndAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNDateTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ReindexStats_EndAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReindexStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReindexStats_Total(ctx context.Context, field graphql.CollectedField, obj *reindex.Stats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ReindexStats_Total(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Total, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint32)
+	fc.Result = res
+	return ec.marshalNUint2uint32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ReindexStats_Total(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReindexStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Uint does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReindexStats_Created(ctx context.Context, field graphql.CollectedField, obj *reindex.Stats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ReindexStats_Created(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Created, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint32)
+	fc.Result = res
+	return ec.marshalNUint2uint32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ReindexStats_Created(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReindexStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Uint does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReindexStats_Updated(ctx context.Context, field graphql.CollectedField, obj *reindex.Stats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ReindexStats_Updated(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Updated, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint32)
+	fc.Result = res
+	return ec.marshalNUint2uint32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ReindexStats_Updated(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReindexStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Uint does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReindexStats_Indexed(ctx context.Context, field graphql.CollectedField, obj *reindex.Stats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ReindexStats_Indexed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Indexed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint32)
+	fc.Result = res
+	return ec.marshalNUint2uint32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ReindexStats_Indexed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReindexStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Uint does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReindexStats_Removed(ctx context.Context, field graphql.CollectedField, obj *reindex.Stats) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ReindexStats_Removed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Removed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uint32)
+	fc.Result = res
+	return ec.marshalNUint2uint32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ReindexStats_Removed(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReindexStats",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Uint does not have child fields")
 		},
 	}
 	return fc, nil
@@ -7338,6 +7846,21 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "GenerateData":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_GenerateData(ctx, field)
+			})
+
+		case "EventReindex":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_EventReindex(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "EventCreate":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -7764,6 +8287,76 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				return ec._Query___schema(ctx, field)
 			})
 
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var reindexStatsImplementors = []string{"ReindexStats"}
+
+func (ec *executionContext) _ReindexStats(ctx context.Context, sel ast.SelectionSet, obj *reindex.Stats) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, reindexStatsImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReindexStats")
+		case "StartAt":
+
+			out.Values[i] = ec._ReindexStats_StartAt(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "EndAt":
+
+			out.Values[i] = ec._ReindexStats_EndAt(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Total":
+
+			out.Values[i] = ec._ReindexStats_Total(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Created":
+
+			out.Values[i] = ec._ReindexStats_Created(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Updated":
+
+			out.Values[i] = ec._ReindexStats_Updated(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Indexed":
+
+			out.Values[i] = ec._ReindexStats_Indexed(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "Removed":
+
+			out.Values[i] = ec._ReindexStats_Removed(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8558,6 +9151,20 @@ func (ec *executionContext) unmarshalNPaginationInput2calendᚋinternalᚋpkgᚋ
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNReindexStats2calendᚋinternalᚋmodulesᚋelasticᚋreindexᚐStats(ctx context.Context, sel ast.SelectionSet, v reindex.Stats) graphql.Marshaler {
+	return ec._ReindexStats(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNReindexStats2ᚖcalendᚋinternalᚋmodulesᚋelasticᚋreindexᚐStats(ctx context.Context, sel ast.SelectionSet, v *reindex.Stats) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ReindexStats(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNSession2ᚖcalendᚋinternalᚋmodelsᚋsessionᚐSession(ctx context.Context, sel ast.SelectionSet, v *session.Session) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -8674,6 +9281,21 @@ func (ec *executionContext) marshalNTokens2ᚖcalendᚋinternalᚋmodulesᚋdoma
 		return graphql.Null
 	}
 	return ec._Tokens(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUint2uint32(ctx context.Context, v interface{}) (uint32, error) {
+	res, err := graphql.UnmarshalUint32(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUint2uint32(ctx context.Context, sel ast.SelectionSet, v uint32) graphql.Marshaler {
+	res := graphql.MarshalUint32(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) unmarshalNUpdateEvent2calendᚋinternalᚋmodulesᚋdomainᚋeventᚋdtoᚐUpdateEvent(ctx context.Context, v interface{}) (dto.UpdateEvent, error) {

@@ -1,4 +1,4 @@
-package repo
+package repo_db
 
 import (
 	"go.uber.org/fx"

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ElasticsearchConfiguration">
+    <option name="clusterConfigurations">
+      <map>
+        <entry key="a1a6ad33-9889-44e6-902c-afbb53e88c83">
+          <value>
+            <X>
+              <option name="id" value="a1a6ad33-9889-44e6-902c-afbb53e88c83" />
+              <option name="label" value="calend" />
+              <option name="url" value="http://localhost:15001" />
+              <option name="version" value="1" />
+            </X>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="requestHistory">
+      <map>
+        <entry key="a1a6ad33-9889-44e6-902c-afbb53e88c83" value="[{&quot;path&quot;:&quot;/events/_search&quot;,&quot;body&quot;:&quot;{\n  \&quot;from\&quot;: 0,\n  \&quot;size\&quot;: 20,\n  \&quot;query\&quot;: {\n    \&quot;match_all\&quot;: {}\n  }\n}&quot;,&quot;method&quot;:&quot;GET&quot;},{&quot;path&quot;:&quot;/.geoip_databases/_search&quot;,&quot;body&quot;:&quot;{\n  \&quot;from\&quot;: 0,\n  \&quot;size\&quot;: 20,\n  \&quot;query\&quot;: {\n    \&quot;match_all\&quot;: {}\n  }\n}&quot;,&quot;method&quot;:&quot;GET&quot;}]" />
+      </map>
+    </option>
+    <option name="version" value="1" />
+  </component>
+</project>

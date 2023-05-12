@@ -74,3 +74,8 @@ models:
   DateTime:
     model:
       - github.com/99designs/gqlgen/graphql.Time
+  Uint:
+    model:
+        - github.com/99designs/gqlgen/graphql.Uint
+        - github.com/99designs/gqlgen/graphql.Uint64
+        - github.com/99designs/gqlgen/graphql.Uint32

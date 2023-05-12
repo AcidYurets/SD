@@ -26,3 +26,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  elastic:
+    container_name: elastic-calend
+    image: elasticsearch:7.17.2
+    environment:
+      - cluster.name=calend
+      - discovery.type=single-node
+      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+      - logger.level=ERROR
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "15001:9200"
+      - "15002:9300"

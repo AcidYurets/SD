@@ -5,6 +5,7 @@ import (
 	"calend/internal/models/err_const"
 	"calend/internal/models/session"
 	"calend/internal/modules/domain/event/dto"
+	"calend/internal/modules/domain/event/elastic"
 	tag_dto "calend/internal/modules/domain/tag/dto"
 	"calend/internal/modules/logger"
 	"context"
@@ -45,12 +46,15 @@ type IInvitationRepo interface {
 type EventService struct {
 	eventRepo IEventRepo
 	invRepo   IInvitationRepo
+
+	elasticService *elastic.EventElasticService
 }
 
-func NewEventService(eRepo IEventRepo, iRepo IInvitationRepo) *EventService {
+func NewEventService(eRepo IEventRepo, iRepo IInvitationRepo, elasticService *elastic.EventElasticService) *EventService {
 	return &EventService{
-		eventRepo: eRepo,
-		invRepo:   iRepo,
+		eventRepo:      eRepo,
+		invRepo:        iRepo,
+		elasticService: elasticService,
 	}
 }
 
@@ -113,6 +117,12 @@ func (r *EventService) Create(ctx context.Context, newEvent *dto.CreateEvent, ne
 		return nil, fmt.Errorf("ошибка при получении события: %w", err)
 	}
 
+	// Переиндексируем эластик
+	_, err = r.elasticService.ReindexByUuids(ctx, createdEvent.Uuid)
+	if err != nil {
+		return nil, err
+	}
+
 	return eventWithInvs, nil
 }
 
@@ -134,6 +144,12 @@ func (r *EventService) AddInvitations(ctx context.Context, uuid string, newInvs 
 	eventWithInvs, err := r.eventRepo.GetByUuid(ctx, uuid)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при получении события: %w", err)
+	}
+
+	// Переиндексируем эластик
+	_, err = r.elasticService.ReindexByUuids(ctx, uuid)
+	if err != nil {
+		return nil, err
 	}
 
 	return eventWithInvs, nil
@@ -169,6 +185,12 @@ func (r *EventService) Update(ctx context.Context, uuid string, updEvent *dto.Up
 		return nil, fmt.Errorf("ошибка при получении события: %w", err)
 	}
 
+	// Переиндексируем эластик
+	_, err = r.elasticService.ReindexByUuids(ctx, uuid)
+	if err != nil {
+		return nil, err
+	}
+
 	return eventWithInvs, nil
 }
 
@@ -185,6 +207,12 @@ func (r *EventService) Delete(ctx context.Context, uuid string) error {
 	// Удаляем событие
 	if err := r.eventRepo.Delete(ctx, uuid); err != nil {
 		return fmt.Errorf("ошибка при удалении события: %w", err)
+	}
+
+	// Переиндексируем эластик
+	_, err := r.elasticService.ReindexByUuids(ctx, uuid)
+	if err != nil {
+		return err
 	}
 
 	return nil

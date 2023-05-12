@@ -4,6 +4,7 @@ extend type Query {
 }
 
 extend type Mutation {
+    EventReindex: ReindexStats!
     EventCreate(event: CreateEvent!, invitations: [CreateInvitation!]): Event!
     EventAddInvitations(id: ID!, invitations: [CreateInvitation!]): Event!
     EventUpdate(id: ID!, event: UpdateEvent!, invitations: [CreateInvitation!]): Event!
