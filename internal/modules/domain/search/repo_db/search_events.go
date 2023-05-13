@@ -65,6 +65,9 @@ func (r *SearchRepo) buildEventFilters(f *dto.EventFilter) []predicate.Event {
 		"tags.name": func(p types.Predicate) types.Predicate {
 			return types.Predicate(event_ent.HasTagsWith(predicate.Tag(p)))
 		},
+		"invitations.user_uuid": func(p types.Predicate) types.Predicate {
+			return types.Predicate(event_ent.HasInvitationsWith(predicate.Invitation(p)))
+		},
 	}
 
 	builder := search_pkg.NewQueryBuilder(wrappersMap)
@@ -77,6 +80,7 @@ func (r *SearchRepo) buildEventFilters(f *dto.EventFilter) []predicate.Event {
 	builder.AddField("creator_uuid", f.CreatorUuid)
 	builder.AddField("creator.login", f.CreatorLogin)
 	builder.AddField("tags.name", f.TagName)
+	builder.AddField("invitations.user_uuid", f.InvitedUserUuid)
 	builder.AddField(strings.Join(ftsSearch, " "), f.FTSearchStr)
 
 	predicates := builder.Build()

@@ -22,8 +22,9 @@ type EventFilter struct {
 	IsWholeDay  *filter.BoolQueryFilter // Поиск по признаку полного дня
 	CreatorUuid *filter.IDQueryFilter   // Поиск по Uuid создателя
 
-	CreatorLogin *filter.TextQueryFilter // Поиск по логину создателя
-	TagName      *filter.TextQueryFilter // Поиск по названию тегов
+	CreatorLogin    *filter.TextQueryFilter // Поиск по логину создателя
+	TagName         *filter.TextQueryFilter // Поиск по названию тегов
+	InvitedUserUuid *filter.IDQueryFilter   // Поиск по uuid приглашенных пользователей
 }
 
 type EventSort struct {

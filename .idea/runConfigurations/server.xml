@@ -10,7 +10,7 @@
       <env name="ELASTIC_PORT" value="15001" />
       <env name="HTTP_SERVER_HOST" value="[::]" />
       <env name="HTTP_SERVER_PORT" value="4040" />
-      <env name="SEARCH_SERVICE" value="elastic" />
+      <env name="SEARCH_SERVICE" value="elastic1" />
       <env name="SECRET" value="123" />
       <env name="TRACE_SQL_COMMANDS" value="true" />
     </envs>

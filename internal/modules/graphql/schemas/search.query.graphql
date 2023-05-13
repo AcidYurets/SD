@@ -23,6 +23,8 @@ input EventFilter @goModel(model: "calend/internal/modules/domain/search/dto.Eve
     CreatorLogin: TextFilterInput
     "Поиск по названию тегов"
     TagName: TextFilterInput
+    "Поиск по uuid приглашенных пользователей"
+    InvitedUserUuid: IDFilterInput
 }
 
 input EventSort @goModel(model: "calend/internal/modules/domain/search/dto.EventSort") {

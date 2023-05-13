@@ -1053,6 +1053,8 @@ input EventFilter @goModel(model: "calend/internal/modules/domain/search/dto.Eve
     CreatorLogin: TextFilterInput
     "Поиск по названию тегов"
     TagName: TextFilterInput
+    "Поиск по uuid приглашенных пользователей"
+    InvitedUserUuid: IDFilterInput
 }
 
 input EventSort @goModel(model: "calend/internal/modules/domain/search/dto.EventSort") {
@@ -7021,7 +7023,7 @@ func (ec *executionContext) unmarshalInputEventFilter(ctx context.Context, obj i
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"FTSearchStr", "Timestamp", "Name", "Description", "Type", "IsWholeDay", "CreatorUuid", "CreatorLogin", "TagName"}
+	fieldsInOrder := [...]string{"FTSearchStr", "Timestamp", "Name", "Description", "Type", "IsWholeDay", "CreatorUuid", "CreatorLogin", "TagName", "InvitedUserUuid"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7097,6 +7099,14 @@ func (ec *executionContext) unmarshalInputEventFilter(ctx context.Context, obj i
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("TagName"))
 			it.TagName, err = ec.unmarshalOTextFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐTextQueryFilter(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "InvitedUserUuid":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("InvitedUserUuid"))
+			it.InvitedUserUuid, err = ec.unmarshalOIDFilterInput2ᚖcalendᚋinternalᚋpkgᚋsearchᚋfilterᚐIDQueryFilter(ctx, v)
 			if err != nil {
 				return it, err
 			}

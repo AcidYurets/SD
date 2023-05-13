@@ -32,7 +32,8 @@ func (b *QueryBuilder) Build() *elastic.BoolQuery {
 }
 
 func (b *QueryBuilder) Eq(field string, value interface{}) {
-	b.add(elastic.NewTermQuery(field, value))
+	keywordField := trimKeyword(field) + ".keyword"
+	b.add(elastic.NewTermQuery(keywordField, value))
 }
 
 func (b *QueryBuilder) In(field string, values []interface{}) {
@@ -40,7 +41,8 @@ func (b *QueryBuilder) In(field string, values []interface{}) {
 		return
 	}
 
-	b.add(elastic.NewTermsQuery(field, values...))
+	keywordField := trimKeyword(field) + ".keyword"
+	b.add(elastic.NewTermsQuery(keywordField, values...))
 }
 
 func (b *QueryBuilder) Nin(field string, values []interface{}) {
@@ -48,8 +50,9 @@ func (b *QueryBuilder) Nin(field string, values []interface{}) {
 		return
 	}
 
+	keywordField := trimKeyword(field) + ".keyword"
 	b.add(elastic.NewBoolQuery().MustNot(
-		elastic.NewTermsQuery(field, values...),
+		elastic.NewTermsQuery(keywordField, values...),
 	))
 }
 
@@ -95,4 +98,8 @@ func (b *QueryBuilder) To(field string, value *time.Time) {
 	rangeQuery.To(value)
 
 	b.add(rangeQuery)
+}
+
+func trimKeyword(field string) string {
+	return strings.TrimSuffix(field, ".keyword")
 }
