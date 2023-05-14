@@ -15,6 +15,10 @@ import (
 
 // Tags is the resolver for the Tags field.
 func (r *eventResolver) Tags(ctx context.Context, obj *dto.Event) ([]*dto1.Tag, error) {
+	if obj.Tags != nil {
+		return obj.Tags, nil
+	}
+
 	tags, err := r.eventService.ListTagsByEventUuid(ctx, obj.Uuid)
 	if err != nil {
 		return nil, err
@@ -25,6 +29,10 @@ func (r *eventResolver) Tags(ctx context.Context, obj *dto.Event) ([]*dto1.Tag, 
 
 // Creator is the resolver for the Creator field.
 func (r *eventResolver) Creator(ctx context.Context, obj *dto.Event) (*dto2.User, error) {
+	if obj.Creator != nil {
+		return obj.Creator, nil
+	}
+
 	creator, err := r.userService.GetByUuid(ctx, obj.CreatorUuid)
 	if err != nil {
 		return nil, err

@@ -2,6 +2,7 @@ package event
 
 import (
 	"calend/internal/modules/domain/event/elastic"
+	"calend/internal/modules/domain/event/generator"
 	"calend/internal/modules/domain/event/repo"
 	"calend/internal/modules/domain/event/service"
 	"go.uber.org/fx"
@@ -12,6 +13,7 @@ var (
 		service.Module,
 		repo.Module,
 		elastic.Module,
+		generator.Module,
 
 		fx.Provide(
 			fx.Annotate(
@@ -26,6 +28,7 @@ var (
 			fx.Annotate(
 				func(r *repo.EventRepo) *repo.EventRepo { return r },
 				fx.As(new(elastic.IEventRepo)),
+				fx.As(new(generator.IEventRepo)),
 			),
 		),
 	)
@@ -34,5 +37,6 @@ var (
 		service.Invokables,
 		repo.Invokables,
 		elastic.Invokables,
+		generator.Invokables,
 	)
 )

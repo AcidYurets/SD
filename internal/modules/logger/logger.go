@@ -9,11 +9,12 @@ import (
 )
 
 func NewLogger(app app.App) (*zap.Logger, zap.AtomicLevel, error) {
+	loggerLevel := zap.NewAtomicLevelAt(zap.InfoLevel)
+
 	config := zap.NewDevelopmentConfig()
 	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	config.Level = loggerLevel
 	logger, err := config.Build()
-
-	loggerLevel := zap.NewAtomicLevelAt(zap.InfoLevel)
 
 	return logger, loggerLevel, err
 }

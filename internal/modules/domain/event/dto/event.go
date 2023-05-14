@@ -2,6 +2,7 @@ package dto
 
 import (
 	tag_dto "calend/internal/modules/domain/tag/dto"
+	"calend/internal/modules/domain/user/dto"
 	"time"
 )
 
@@ -13,8 +14,11 @@ type Event struct {
 	Type        string        // Тип события
 	IsWholeDay  bool          // Событие на целый день?
 	Invitations []*Invitation // Приглашения события
-	Tags        tag_dto.Tags  // Теги события
-	CreatorUuid string        // Создатель события
+	CreatorUuid string        // Uuid создателя события
+
+	Tags    []*tag_dto.Tag // Теги события
+	Creator *dto.User      // Создатель события
+
 }
 
 type Events []*Event

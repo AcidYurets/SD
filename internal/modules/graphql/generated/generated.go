@@ -159,7 +159,6 @@ type ComplexityRoot struct {
 
 type EventResolver interface {
 	Tags(ctx context.Context, obj *dto.Event) ([]*dto2.Tag, error)
-
 	Creator(ctx context.Context, obj *dto.Event) (*dto3.User, error)
 }
 type InvitationResolver interface {
@@ -961,9 +960,9 @@ input CreateInvitation @goModel(model: "calend/internal/modules/domain/event/dto
     Description: String!
     Type: String!
     IsWholeDay: Boolean!
-    Tags: [Tag!]!
     Invitations: [Invitation!]!
-    Creator: User!
+    Tags: [Tag!]! @goField(forceResolver: true)
+    Creator: User! @goField(forceResolver: true)
 }
 
 type Invitation @goModel(model: "calend/internal/modules/domain/event/dto.Invitation") {
@@ -1945,58 +1944,6 @@ func (ec *executionContext) fieldContext_Event_IsWholeDay(ctx context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _Event_Tags(ctx context.Context, field graphql.CollectedField, obj *dto.Event) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Event_Tags(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Event().Tags(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*dto2.Tag)
-	fc.Result = res
-	return ec.marshalNTag2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐTagᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Event_Tags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Event",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "Uuid":
-				return ec.fieldContext_Tag_Uuid(ctx, field)
-			case "Name":
-				return ec.fieldContext_Tag_Name(ctx, field)
-			case "Description":
-				return ec.fieldContext_Tag_Description(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Tag", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Event_Invitations(ctx context.Context, field graphql.CollectedField, obj *dto.Event) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Event_Invitations(ctx, field)
 	if err != nil {
@@ -2044,6 +1991,58 @@ func (ec *executionContext) fieldContext_Event_Invitations(ctx context.Context, 
 				return ec.fieldContext_Invitation_AccessRight(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Invitation", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Event_Tags(ctx context.Context, field graphql.CollectedField, obj *dto.Event) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Event_Tags(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Event().Tags(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*dto2.Tag)
+	fc.Result = res
+	return ec.marshalNTag2ᚕᚖcalendᚋinternalᚋmodulesᚋdomainᚋtagᚋdtoᚐTagᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Event_Tags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Event",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Uuid":
+				return ec.fieldContext_Tag_Uuid(ctx, field)
+			case "Name":
+				return ec.fieldContext_Tag_Name(ctx, field)
+			case "Description":
+				return ec.fieldContext_Tag_Description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Tag", field.Name)
 		},
 	}
 	return fc, nil
@@ -2650,10 +2649,10 @@ func (ec *executionContext) fieldContext_Mutation_EventCreate(ctx context.Contex
 				return ec.fieldContext_Event_Type(ctx, field)
 			case "IsWholeDay":
 				return ec.fieldContext_Event_IsWholeDay(ctx, field)
-			case "Tags":
-				return ec.fieldContext_Event_Tags(ctx, field)
 			case "Invitations":
 				return ec.fieldContext_Event_Invitations(ctx, field)
+			case "Tags":
+				return ec.fieldContext_Event_Tags(ctx, field)
 			case "Creator":
 				return ec.fieldContext_Event_Creator(ctx, field)
 			}
@@ -2725,10 +2724,10 @@ func (ec *executionContext) fieldContext_Mutation_EventAddInvitations(ctx contex
 				return ec.fieldContext_Event_Type(ctx, field)
 			case "IsWholeDay":
 				return ec.fieldContext_Event_IsWholeDay(ctx, field)
-			case "Tags":
-				return ec.fieldContext_Event_Tags(ctx, field)
 			case "Invitations":
 				return ec.fieldContext_Event_Invitations(ctx, field)
+			case "Tags":
+				return ec.fieldContext_Event_Tags(ctx, field)
 			case "Creator":
 				return ec.fieldContext_Event_Creator(ctx, field)
 			}
@@ -2800,10 +2799,10 @@ func (ec *executionContext) fieldContext_Mutation_EventUpdate(ctx context.Contex
 				return ec.fieldContext_Event_Type(ctx, field)
 			case "IsWholeDay":
 				return ec.fieldContext_Event_IsWholeDay(ctx, field)
-			case "Tags":
-				return ec.fieldContext_Event_Tags(ctx, field)
 			case "Invitations":
 				return ec.fieldContext_Event_Invitations(ctx, field)
+			case "Tags":
+				return ec.fieldContext_Event_Tags(ctx, field)
 			case "Creator":
 				return ec.fieldContext_Event_Creator(ctx, field)
 			}
@@ -3703,10 +3702,10 @@ func (ec *executionContext) fieldContext_Query_Event(ctx context.Context, field 
 				return ec.fieldContext_Event_Type(ctx, field)
 			case "IsWholeDay":
 				return ec.fieldContext_Event_IsWholeDay(ctx, field)
-			case "Tags":
-				return ec.fieldContext_Event_Tags(ctx, field)
 			case "Invitations":
 				return ec.fieldContext_Event_Invitations(ctx, field)
+			case "Tags":
+				return ec.fieldContext_Event_Tags(ctx, field)
 			case "Creator":
 				return ec.fieldContext_Event_Creator(ctx, field)
 			}
@@ -3778,10 +3777,10 @@ func (ec *executionContext) fieldContext_Query_EventsAvailable(ctx context.Conte
 				return ec.fieldContext_Event_Type(ctx, field)
 			case "IsWholeDay":
 				return ec.fieldContext_Event_IsWholeDay(ctx, field)
-			case "Tags":
-				return ec.fieldContext_Event_Tags(ctx, field)
 			case "Invitations":
 				return ec.fieldContext_Event_Invitations(ctx, field)
+			case "Tags":
+				return ec.fieldContext_Event_Tags(ctx, field)
 			case "Creator":
 				return ec.fieldContext_Event_Creator(ctx, field)
 			}
@@ -3842,10 +3841,10 @@ func (ec *executionContext) fieldContext_Query_SearchEvent(ctx context.Context, 
 				return ec.fieldContext_Event_Type(ctx, field)
 			case "IsWholeDay":
 				return ec.fieldContext_Event_IsWholeDay(ctx, field)
-			case "Tags":
-				return ec.fieldContext_Event_Tags(ctx, field)
 			case "Invitations":
 				return ec.fieldContext_Event_Invitations(ctx, field)
+			case "Tags":
+				return ec.fieldContext_Event_Tags(ctx, field)
 			case "Creator":
 				return ec.fieldContext_Event_Creator(ctx, field)
 			}
@@ -7651,6 +7650,13 @@ func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "Invitations":
+
+			out.Values[i] = ec._Event_Invitations(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		case "Tags":
 			field := field
 
@@ -7671,13 +7677,6 @@ func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, ob
 				return innerFunc(ctx)
 
 			})
-		case "Invitations":
-
-			out.Values[i] = ec._Event_Invitations(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
 		case "Creator":
 			field := field
 

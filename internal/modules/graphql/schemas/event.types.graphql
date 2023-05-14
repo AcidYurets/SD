@@ -5,9 +5,9 @@ type Event @goModel(model: "calend/internal/modules/domain/event/dto.Event") {
     Description: String!
     Type: String!
     IsWholeDay: Boolean!
-    Tags: [Tag!]!
     Invitations: [Invitation!]!
-    Creator: User!
+    Tags: [Tag!]! @goField(forceResolver: true)
+    Creator: User! @goField(forceResolver: true)
 }
 
 type Invitation @goModel(model: "calend/internal/modules/domain/event/dto.Invitation") {

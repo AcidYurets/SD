@@ -9,6 +9,7 @@ import (
 	"calend/internal/modules/logger"
 	"calend/internal/utils/slice"
 	"context"
+	"fmt"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/gorilla/mux"
@@ -28,6 +29,10 @@ func RegisterGraphQL(router *mux.Router, resolver *resolvers.Resolver, authServi
 	srv.SetErrorPresenter(func(ctx context.Context, e error) *gqlerror.Error {
 		defaultErr := graphql.DefaultErrorPresenter(ctx, e)
 		return defaultErr
+	})
+
+	srv.SetRecoverFunc(func(ctx context.Context, err interface{}) error {
+		return fmt.Errorf("%v", err)
 	})
 
 	srv.AroundOperations(injectSession(

@@ -1,8 +1,7 @@
 package trace_driver
 
 import (
-	"calend/internal/models/roles"
-	"calend/internal/models/session"
+	"calend/internal/modules/db/roles"
 	"context"
 	"database/sql"
 	"entgo.io/ent/dialect"
@@ -14,7 +13,7 @@ import (
 
 const argsTypeError = "ошибка при логировании: args не является типом []any"
 
-// LogLevel
+// LogLevel уровень логирования
 type LogLevel int
 
 const (
@@ -63,31 +62,6 @@ func errorFunc(msg string) func() string {
 	}
 }
 
-func changeRole(ctx context.Context, db dialect.ExecQuerier) error {
-	var prepQuery string
-	args := make([]any, 0)
-
-	if roles.CheckNeedChange(ctx) {
-		currentUserUuid, err := session.GetUserUuidFromCtx(ctx)
-		if err != nil {
-			return err
-		}
-
-		prepQuery = "CALL before_each_query($1);\n"
-		args = append(args, currentUserUuid)
-	}
-	if roles.CheckUseSuperUser(ctx) {
-		prepQuery = "SET ROLE superuser;\n"
-	}
-
-	err := db.Exec(ctx, prepQuery, args, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Exec logs its params and calls the underlying driver Exec method.
 func (d *TraceDriver) Exec(ctx context.Context, query string, args, v any) error {
 	var f func() string
@@ -99,20 +73,7 @@ func (d *TraceDriver) Exec(ctx context.Context, query string, args, v any) error
 	}
 
 	begin := time.Now()
-
-	conn, err := d.Driver.(*entsql.Driver).DB().Conn(ctx)
-	if err != nil {
-		return fmt.Errorf("не удалось получить соединение: %w", err)
-	}
-
-	entConn := entsql.Conn{ExecQuerier: conn}
-
-	err = changeRole(ctx, entConn)
-	if err != nil {
-		return err
-	}
-
-	err = entConn.Exec(ctx, query, args, v)
+	err := d.Driver.Exec(ctx, query, args, v)
 	d.logger.Trace(begin, f, err, nil)
 
 	return err
@@ -146,20 +107,7 @@ func (d *TraceDriver) Query(ctx context.Context, query string, args, v any) erro
 	}
 
 	begin := time.Now()
-
-	conn, err := d.Driver.(*entsql.Driver).DB().Conn(ctx)
-	if err != nil {
-		return fmt.Errorf("не удалось получить соединение: %w", err)
-	}
-
-	entConn := entsql.Conn{ExecQuerier: conn}
-
-	err = changeRole(ctx, entConn)
-	if err != nil {
-		return err
-	}
-
-	err = entConn.Query(ctx, query, args, v)
+	err := d.Driver.Query(ctx, query, args, v)
 	d.logger.Trace(begin, f, err, nil)
 
 	return err
@@ -190,24 +138,16 @@ func (d *TraceDriver) Tx(ctx context.Context) (dialect.Tx, error) {
 	}
 	id := uuid.NewString()
 
-	d.logger.Info("transaction started", map[string]any{"tx-id": id})
-
-	return &DebugTx{tx, id, d.logger, ctx}, nil
-}
-
-// BeginTx adds an log-id for the transaction and calls the underlying driver BeginTx command if it is supported.
-func (d *TraceDriver) BeginTx(ctx context.Context, opts *sql.TxOptions) (dialect.Tx, error) {
-	drv, ok := d.Driver.(interface {
-		BeginTx(context.Context, *sql.TxOptions) (dialect.Tx, error)
-	})
+	// В начале каждой транзакции меняем роль
+	conn, ok := tx.(entsql.ExecQuerier)
 	if !ok {
-		return nil, fmt.Errorf("dialect.Driver.BeginTx is not supported")
+		return nil, fmt.Errorf("Tx.ExecContext is not supported")
 	}
-	tx, err := drv.BeginTx(ctx, opts)
+
+	err = roles.ChangeRole(ctx, conn)
 	if err != nil {
 		return nil, err
 	}
-	id := uuid.New().String()
 
 	d.logger.Info("transaction started", map[string]any{"tx-id": id})
 
@@ -233,13 +173,7 @@ func (d *DebugTx) Exec(ctx context.Context, query string, args, v any) error {
 	}
 
 	begin := time.Now()
-
-	err := changeRole(ctx, d.Tx)
-	if err != nil {
-		return err
-	}
-
-	err = d.Tx.Exec(ctx, query, args, v)
+	err := d.Tx.Exec(ctx, query, args, v)
 	d.logger.Trace(begin, f, err, map[string]any{"tx-id": d.id})
 
 	return err
@@ -256,12 +190,6 @@ func (d *DebugTx) ExecContext(ctx context.Context, query string, args ...any) (s
 
 	f := explainFunc(query, args)
 	begin := time.Now()
-
-	err := changeRole(ctx, d.Tx)
-	if err != nil {
-		return nil, err
-	}
-
 	res, err := drv.ExecContext(ctx, query, args...)
 	d.logger.Trace(begin, f, err, map[string]any{"tx-id": d.id})
 
@@ -279,13 +207,7 @@ func (d *DebugTx) Query(ctx context.Context, query string, args, v any) error {
 	}
 
 	begin := time.Now()
-
-	err := changeRole(ctx, d.Tx)
-	if err != nil {
-		return err
-	}
-
-	err = d.Tx.Query(ctx, query, args, v)
+	err := d.Tx.Query(ctx, query, args, v)
 	d.logger.Trace(begin, f, err, map[string]any{"tx-id": d.id})
 
 	return err
@@ -302,12 +224,6 @@ func (d *DebugTx) QueryContext(ctx context.Context, query string, args ...any) (
 
 	f := explainFunc(query, args)
 	begin := time.Now()
-
-	err := changeRole(ctx, d.Tx)
-	if err != nil {
-		return nil, err
-	}
-
 	res, err := drv.QueryContext(ctx, query, args...)
 	d.logger.Trace(begin, f, err, map[string]any{"tx-id": d.id})
 

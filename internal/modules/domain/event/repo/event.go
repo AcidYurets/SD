@@ -9,6 +9,7 @@ import (
 	"calend/internal/modules/domain/event/dto"
 	tag_dto "calend/internal/modules/domain/tag/dto"
 	"calend/internal/modules/domain/tag/repo"
+	repo2 "calend/internal/modules/domain/user/repo"
 	"context"
 )
 
@@ -160,8 +161,10 @@ func ToEventDTO(model *ent.Event) *dto.Event {
 		Type:        model.Type,
 		IsWholeDay:  model.IsWholeDay,
 		Invitations: ToInvitationDTOs(model.Edges.Invitations),
-		Tags:        repo.ToTagDTOs(model.Edges.Tags),
 		CreatorUuid: model.CreatorUUID,
+
+		Tags:    repo.ToTagDTOs(model.Edges.Tags),
+		Creator: repo2.ToUserDTO(model.Edges.Creator),
 	}
 }
 
