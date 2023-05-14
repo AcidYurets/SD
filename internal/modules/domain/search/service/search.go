@@ -23,5 +23,6 @@ func NewSearchService(repo ISearchRepo) *SearchService {
 }
 
 func (r *SearchService) SearchEvents(ctx context.Context, searchRequest *dto.EventSearchRequest) (ev_dto.Events, error) {
+	// defer timer.Evaluate("SearchEvents")()
 	return r.repo.SearchEvents(ctx, searchRequest)
 }
