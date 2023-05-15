@@ -100,6 +100,7 @@ func (r *AuthService) Login(ctx context.Context, userCredentials *dto.UserCreden
 	ss := &session.Session{
 		SID:      uuid.NewString(),
 		UserUuid: currentUser.Uuid,
+		Role:     currentUser.Role,
 	}
 
 	// Сроки жизни токенов

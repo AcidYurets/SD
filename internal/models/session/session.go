@@ -1,14 +1,16 @@
 package session
 
 import (
+	"calend/internal/models/roles"
 	"context"
 	"fmt"
 )
 
 // Session сессия пользователя
 type Session struct {
-	SID      string // Уникальный идентификатор сессии
-	UserUuid string // Uuid пользователя
+	SID      string     // Уникальный идентификатор сессии
+	UserUuid string     // Uuid пользователя
+	Role     roles.Type // Роль пользователя
 }
 
 type sessionCtx struct{}

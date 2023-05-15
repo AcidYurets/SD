@@ -3,6 +3,7 @@ package service
 import (
 	ev_dto "calend/internal/modules/domain/event/dto"
 	"calend/internal/modules/domain/search/dto"
+	"calend/internal/utils/timer"
 	"context"
 )
 
@@ -23,6 +24,6 @@ func NewSearchService(repo ISearchRepo) *SearchService {
 }
 
 func (r *SearchService) SearchEvents(ctx context.Context, searchRequest *dto.EventSearchRequest) (ev_dto.Events, error) {
-	// defer timer.Evaluate("SearchEvents")()
+	defer timer.Evaluate("SearchEvents")()
 	return r.repo.SearchEvents(ctx, searchRequest)
 }

@@ -1,4 +1,6 @@
 extend type Mutation {
-    GenerateData: String
+    GenerateUsers(count: Uint!): String
+    GenerateTags(count: Uint!): String
+    GenerateEvents(count: Uint!): String
 }
 

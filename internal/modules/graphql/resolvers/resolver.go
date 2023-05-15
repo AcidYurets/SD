@@ -4,9 +4,12 @@ import (
 	ar_serv "calend/internal/modules/domain/access_right/service"
 	auth_serv "calend/internal/modules/domain/auth/service"
 	event_elastic "calend/internal/modules/domain/event/elastic"
+	generator2 "calend/internal/modules/domain/event/generator"
 	event_serv "calend/internal/modules/domain/event/service"
 	search_serv "calend/internal/modules/domain/search/service"
+	"calend/internal/modules/domain/tag/generator"
 	tag_serv "calend/internal/modules/domain/tag/service"
+	generator3 "calend/internal/modules/domain/user/generator"
 	user_serv "calend/internal/modules/domain/user/service"
 )
 
@@ -22,6 +25,9 @@ type Resolver struct {
 	eventService  *event_serv.EventService
 	searchService *search_serv.SearchService
 
+	tagGenerator        *generator.TagGenerator
+	eventGenerator      *generator2.EventGenerator
+	userGenerator       *generator3.UserGenerator
 	reindexEventService *event_elastic.EventElasticService
 }
 
@@ -33,6 +39,9 @@ func NewResolver(
 	eventService *event_serv.EventService,
 	searchService *search_serv.SearchService,
 
+	tagGenerator *generator.TagGenerator,
+	eventGenerator *generator2.EventGenerator,
+	userGenerator *generator3.UserGenerator,
 	reindexEventService *event_elastic.EventElasticService,
 ) *Resolver {
 
@@ -44,6 +53,9 @@ func NewResolver(
 		eventService:  eventService,
 		searchService: searchService,
 
+		tagGenerator:        tagGenerator,
+		eventGenerator:      eventGenerator,
+		userGenerator:       userGenerator,
 		reindexEventService: reindexEventService,
 	}
 

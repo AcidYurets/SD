@@ -95,7 +95,9 @@ type ComplexityRoot struct {
 		EventDelete         func(childComplexity int, id string) int
 		EventReindex        func(childComplexity int) int
 		EventUpdate         func(childComplexity int, id string, event dto.UpdateEvent, invitations []*dto.CreateInvitation) int
-		GenerateData        func(childComplexity int) int
+		GenerateEvents      func(childComplexity int, count uint) int
+		GenerateTags        func(childComplexity int, count uint) int
+		GenerateUsers       func(childComplexity int, count uint) int
 		Ping                func(childComplexity int) int
 		SignUp              func(childComplexity int, newUser dto1.NewUser) int
 		TagCreate           func(childComplexity int, tag dto2.CreateTag) int
@@ -168,7 +170,9 @@ type InvitationResolver interface {
 type MutationResolver interface {
 	Ping(ctx context.Context) (string, error)
 	SignUp(ctx context.Context, newUser dto1.NewUser) (*dto3.User, error)
-	GenerateData(ctx context.Context) (*string, error)
+	GenerateUsers(ctx context.Context, count uint) (*string, error)
+	GenerateTags(ctx context.Context, count uint) (*string, error)
+	GenerateEvents(ctx context.Context, count uint) (*string, error)
 	EventReindex(ctx context.Context) (*reindex.Stats, error)
 	EventCreate(ctx context.Context, event dto.CreateEvent, invitations []*dto.CreateInvitation) (*dto.Event, error)
 	EventAddInvitations(ctx context.Context, id string, invitations []*dto.CreateInvitation) (*dto.Event, error)
@@ -390,12 +394,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.EventUpdate(childComplexity, args["id"].(string), args["event"].(dto.UpdateEvent), args["invitations"].([]*dto.CreateInvitation)), true
 
-	case "Mutation.GenerateData":
-		if e.complexity.Mutation.GenerateData == nil {
+	case "Mutation.GenerateEvents":
+		if e.complexity.Mutation.GenerateEvents == nil {
 			break
 		}
 
-		return e.complexity.Mutation.GenerateData(childComplexity), true
+		args, err := ec.field_Mutation_GenerateEvents_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.GenerateEvents(childComplexity, args["count"].(uint)), true
+
+	case "Mutation.GenerateTags":
+		if e.complexity.Mutation.GenerateTags == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_GenerateTags_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.GenerateTags(childComplexity, args["count"].(uint)), true
+
+	case "Mutation.GenerateUsers":
+		if e.complexity.Mutation.GenerateUsers == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_GenerateUsers_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.GenerateUsers(childComplexity, args["count"].(uint)), true
 
 	case "Mutation.ping":
 		if e.complexity.Mutation.Ping == nil {
@@ -896,7 +929,9 @@ type JWT @goModel(model: "calend/internal/modules/domain/auth/dto.JWT") {
 }
 `, BuiltIn: false},
 	{Name: "../schemas/develop.query.graphql", Input: `extend type Mutation {
-    GenerateData: String
+    GenerateUsers(count: Uint!): String
+    GenerateTags(count: Uint!): String
+    GenerateEvents(count: Uint!): String
 }
 
 `, BuiltIn: false},
@@ -1251,6 +1286,51 @@ func (ec *executionContext) field_Mutation_EventUpdate_args(ctx context.Context,
 		}
 	}
 	args["invitations"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_GenerateEvents_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uint
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
+		arg0, err = ec.unmarshalNUint2uint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["count"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_GenerateTags_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uint
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
+		arg0, err = ec.unmarshalNUint2uint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["count"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_GenerateUsers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 uint
+	if tmp, ok := rawArgs["count"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("count"))
+		arg0, err = ec.unmarshalNUint2uint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["count"] = arg0
 	return args, nil
 }
 
@@ -2497,8 +2577,8 @@ func (ec *executionContext) fieldContext_Mutation_SignUp(ctx context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_GenerateData(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_GenerateData(ctx, field)
+func (ec *executionContext) _Mutation_GenerateUsers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_GenerateUsers(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2511,7 +2591,7 @@ func (ec *executionContext) _Mutation_GenerateData(ctx context.Context, field gr
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().GenerateData(rctx)
+		return ec.resolvers.Mutation().GenerateUsers(rctx, fc.Args["count"].(uint))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2525,7 +2605,7 @@ func (ec *executionContext) _Mutation_GenerateData(ctx context.Context, field gr
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_GenerateData(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_GenerateUsers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -2534,6 +2614,121 @@ func (ec *executionContext) fieldContext_Mutation_GenerateData(ctx context.Conte
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_GenerateUsers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_GenerateTags(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_GenerateTags(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().GenerateTags(rctx, fc.Args["count"].(uint))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_GenerateTags(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_GenerateTags_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_GenerateEvents(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_GenerateEvents(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().GenerateEvents(rctx, fc.Args["count"].(uint))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_GenerateEvents(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_GenerateEvents_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
 	}
 	return fc, nil
 }
@@ -7855,10 +8050,22 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "GenerateData":
+		case "GenerateUsers":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_GenerateData(ctx, field)
+				return ec._Mutation_GenerateUsers(ctx, field)
+			})
+
+		case "GenerateTags":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_GenerateTags(ctx, field)
+			})
+
+		case "GenerateEvents":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_GenerateEvents(ctx, field)
 			})
 
 		case "EventReindex":
@@ -9290,6 +9497,21 @@ func (ec *executionContext) marshalNTokens2ᚖcalendᚋinternalᚋmodulesᚋdoma
 		return graphql.Null
 	}
 	return ec._Tokens(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUint2uint(ctx context.Context, v interface{}) (uint, error) {
+	res, err := graphql.UnmarshalUint(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUint2uint(ctx context.Context, sel ast.SelectionSet, v uint) graphql.Marshaler {
+	res := graphql.MarshalUint(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) unmarshalNUint2uint32(ctx context.Context, v interface{}) (uint32, error) {

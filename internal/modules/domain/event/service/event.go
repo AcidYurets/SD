@@ -3,6 +3,7 @@ package service
 import (
 	"calend/internal/models/access"
 	"calend/internal/models/err_const"
+	"calend/internal/models/roles"
 	"calend/internal/models/session"
 	"calend/internal/modules/domain/event/dto"
 	"calend/internal/modules/domain/event/elastic"
@@ -219,10 +220,17 @@ func (r *EventService) Delete(ctx context.Context, uuid string) error {
 }
 
 func (r *EventService) checkAvailable(ctx context.Context, eventUuid string, opCode access.Type) error {
-	userUuid, err := session.GetUserUuidFromCtx(ctx)
-	if err != nil {
-		return err
+	ss, ok := session.GetSessionFromCtx(ctx)
+	if !ok {
+		return fmt.Errorf("ошибка при получении сессии")
 	}
+
+	// Если пользователь -- админ, то у него полный доступ
+	if ss.Role == roles.Admin {
+		return nil
+	}
+
+	userUuid := ss.UserUuid
 
 	event, err := r.eventRepo.GetCheckingInfoByUuid(ctx, eventUuid)
 	if err != nil {

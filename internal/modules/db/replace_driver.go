@@ -28,7 +28,7 @@ func replaceDriver(ctx context.Context, holder DriverHolder, cfg config.Config, 
 
 	conn, err := driver.DB().Conn(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("не удалось получить соединение")
+		return nil, fmt.Errorf("не удалось получить соединение: %w", err)
 	}
 	entConn := entsql.Conn{ExecQuerier: conn}
 

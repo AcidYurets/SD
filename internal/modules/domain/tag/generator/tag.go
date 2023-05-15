@@ -21,20 +21,28 @@ func NewTagGenerator(eRepo ITagRepo) *TagGenerator {
 	}
 }
 
-func (r *TagGenerator) Generate(ctx context.Context) error {
-	newTag, err := r.generateTag()
-	if err != nil {
-		return err
-	}
+// Generate создает теги со случайными данными
+func (r *TagGenerator) Generate(ctx context.Context, count uint) error {
+	for i := uint(0); i < count; i++ {
+		newTag, err := r.generateTag(i)
+		if err != nil {
+			return fmt.Errorf("ошибка при генерации тега: %w", err)
+		}
 
-	_, err = r.tagRepo.Create(ctx, newTag)
-	if err != nil {
-		return fmt.Errorf("ошибка при создании события: %w", err)
+		_, err = r.tagRepo.Create(ctx, newTag)
+		if err != nil {
+			return fmt.Errorf("ошибка при создании тега: %w", err)
+		}
 	}
-
 	return nil
 }
 
-func (r *TagGenerator) generateTag() (*dto.CreateTag, error) {
-	return nil, nil
+func (r *TagGenerator) generateTag(num uint) (*dto.CreateTag, error) {
+	// Создаем тег со случайным названием и описанием
+	newTag := &dto.CreateTag{
+		Name:        fmt.Sprintf("Тег%d", num),
+		Description: fmt.Sprintf("Описание тега %d", num),
+	}
+
+	return newTag, nil
 }
