@@ -15,7 +15,9 @@ func (b *SortBuilder) Build() []elastic.Sorter {
 }
 
 func (b *SortBuilder) AddSort(field string, asc bool) {
-	fieldSort := elastic.NewFieldSort(field)
+	keywordField := trimKeyword(field) + ".keyword"
+
+	fieldSort := elastic.NewFieldSort(keywordField)
 	fieldSort.Order(asc)
 
 	b.sorters = append(b.sorters, fieldSort)

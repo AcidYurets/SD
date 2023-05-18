@@ -33,7 +33,7 @@ func (r *eventResolver) Creator(ctx context.Context, obj *dto.Event) (*dto2.User
 		return obj.Creator, nil
 	}
 
-	creator, err := r.userService.GetByUuid(ctx, obj.CreatorUuid)
+	creator, err := r.getUserByUuid(ctx, obj.CreatorUuid)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (r *eventResolver) Creator(ctx context.Context, obj *dto.Event) (*dto2.User
 
 // User is the resolver for the User field.
 func (r *invitationResolver) User(ctx context.Context, obj *dto.Invitation) (*dto2.User, error) {
-	user, err := r.userService.GetByUuid(ctx, obj.UserUuid)
+	user, err := r.getUserByUuid(ctx, obj.UserUuid)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (r *invitationResolver) User(ctx context.Context, obj *dto.Invitation) (*dt
 
 // AccessRight is the resolver for the AccessRight field.
 func (r *invitationResolver) AccessRight(ctx context.Context, obj *dto.Invitation) (*dto3.AccessRight, error) {
-	accessRight, err := r.arService.GetByCode(ctx, obj.AccessRightCode)
+	accessRight, err := r.getAccessRightByCode(ctx, obj.AccessRightCode)
 	if err != nil {
 		return nil, err
 	}

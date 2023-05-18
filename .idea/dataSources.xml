@@ -8,12 +8,5 @@
       <jdbc-url>jdbc:postgresql://localhost:15000/server_db</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="calend_db@remote" uuid="196beb9e-3541-4199-a8fb-8f6f58be7882">
-      <driver-ref>postgresql</driver-ref>
-      <synchronize>true</synchronize>
-      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
-      <jdbc-url>jdbc:postgresql://dpg-chb8l9qk728tp9crlj1g-a.oregon-postgres.render.com:5432/calend_db</jdbc-url>
-      <working-dir>$ProjectFileDir$</working-dir>
-    </data-source>
   </component>
 </project>

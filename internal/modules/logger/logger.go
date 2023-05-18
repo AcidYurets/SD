@@ -22,7 +22,7 @@ func NewLogger(app app.App) (*zap.Logger, zap.AtomicLevel, error) {
 func InvokeLogger(logger *zap.Logger, lifecycle fx.Lifecycle) {
 	lifecycle.Append(fx.Hook{
 		OnStop: func(context.Context) error {
-			return logger.Sync()
+			return nil //logger.Sync()
 		},
 	})
 }

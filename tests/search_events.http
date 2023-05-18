@@ -1,0 +1,56 @@
+### Поиск событий
+GRAPHQL http://localhost:4040/graphql
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODU5Mzg0MTgsImlhdCI6MTY4NDEzODQxOCwianRpIjoiOTk0N2I0MzctZmE0Zi00ODkwLThjMzAtYzY3Mjk4NWM3MDUwIiwic2Vzc2lvbiI6eyJTSUQiOiI3MWI5ZTRjNy1kMTg3LTRmZjYtYjdhNS03NzNlNmMzNGIyNDMiLCJVc2VyVXVpZCI6ImM2MzVlNTA1LWY5NTctNGUzMy1iMDY1LTY5NGU5Y2RmNGU1YyIsIlJvbGUiOiJhZG1pbiJ9fQ.FC90LPmzzDzl5SjthPJCEUKyyjoyfoUc1JelUnm1dUQ
+
+query SearchEvent($paginate: PaginationInput!, $filter: EventFilter) {
+  SearchEvent(paginate: $paginate, filter: $filter) {
+    Uuid
+    Name
+    Description
+    IsWholeDay
+    Creator {
+      Login
+      Phone
+      Uuid
+    }
+    Type
+    Timestamp
+    Invitations {
+      Uuid
+      AccessRight {
+        Code
+        Description
+      }
+      User {
+        Login
+        Phone
+        Role
+        Uuid
+      }
+    }
+  }
+}
+
+{
+  "paginate": {
+    "Page": 1,
+    "PageSize": 200
+  },
+  "filter":{
+    "FTSearchStr": {
+      "Str": "Соб"
+    },
+    "CreatorLogin": {
+      "Ts": "Us"
+    },
+    "Description": {
+      "Ts": "Опи"
+    },
+    "TagName": {
+      "Ts": "Тег"
+    }
+  },
+  "sort": {
+    "CreatorLogin": "ASC"
+  }
+}

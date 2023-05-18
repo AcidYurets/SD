@@ -46,6 +46,17 @@ func (r *EventRepo) ListTagsByEventUuid(ctx context.Context, uuid string) (tag_d
 	return repo.ToTagDTOs(tags), nil
 }
 
+func (r *EventRepo) ListTagsByEventUuids(ctx context.Context, uuids []string) (tag_dto.Tags, error) {
+	tags, err := r.client.Event.Query().Where(event_ent.IDIn(uuids...)).
+		QueryTags().
+		All(ctx)
+	if err != nil {
+		return nil, db.WrapError(err)
+	}
+
+	return repo.ToTagDTOs(tags), nil
+}
+
 func (r *EventRepo) GetCheckingInfoByUuid(ctx context.Context, uuid string) (*dto.Event, error) {
 	event, err := r.client.Event.Query().Where(event_ent.ID(uuid)).
 		WithInvitations(func(q *ent.InvitationQuery) {

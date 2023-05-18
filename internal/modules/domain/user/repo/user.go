@@ -46,6 +46,17 @@ func (r *UserRepo) List(ctx context.Context) (dto.Users, error) {
 	return ToUserDTOs(users), nil
 }
 
+func (r *UserRepo) ListByUuids(ctx context.Context, uuids []string) (dto.Users, error) {
+	users, err := r.client.User.Query().
+		Where(user_ent.IDIn(uuids...)).
+		All(ctx)
+	if err != nil {
+		return nil, db.WrapError(err)
+	}
+
+	return ToUserDTOs(users), nil
+}
+
 func (r *UserRepo) Create(ctx context.Context, dtm *dto.CreateUser) (*dto.User, error) {
 	user, err := r.client.User.Create().
 		SetPhone(dtm.Phone).

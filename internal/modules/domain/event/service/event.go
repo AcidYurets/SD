@@ -23,6 +23,8 @@ type IEventRepo interface {
 	GetByUuid(ctx context.Context, uuid string) (*dto.Event, error)
 	// ListTagsByEventUuid получение тегов по uuid события
 	ListTagsByEventUuid(ctx context.Context, uuid string) (tag_dto.Tags, error)
+	// ListTagsByEventUuids получение тегов по uuids событий
+	ListTagsByEventUuids(ctx context.Context, uuids []string) (tag_dto.Tags, error)
 	// GetCheckingInfoByUuid получение по uuid события только необходимыми для проверки прав доступа полями
 	GetCheckingInfoByUuid(ctx context.Context, uuid string) (*dto.Event, error)
 	// ListAvailable ищет все доступные пользователю события вместе со связанными сущностями, т.е.
@@ -68,11 +70,11 @@ func (r *EventService) GetByUuid(ctx context.Context, uuid string) (*dto.Event, 
 }
 
 func (r *EventService) ListTagsByEventUuid(ctx context.Context, uuid string) (tag_dto.Tags, error) {
-	if err := r.checkAvailable(ctx, uuid, access.ReadAccess); err != nil {
-		return nil, err
-	}
-
 	return r.eventRepo.ListTagsByEventUuid(ctx, uuid)
+}
+
+func (r *EventService) ListTagsByEventUuids(ctx context.Context, uuids []string) (tag_dto.Tags, error) {
+	return r.eventRepo.ListTagsByEventUuids(ctx, uuids)
 }
 
 // ListAvailable ищет все доступные пользователю события, т.е.

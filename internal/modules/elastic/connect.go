@@ -8,11 +8,18 @@ import (
 )
 
 func connectElastic(cfg config.Config, logger *zap.Logger) (*elastic.Client, error) {
-	client, err := elastic.NewClient(
+	opts := make([]elastic.ClientOptionFunc, 0)
+
+	opts = append(opts,
 		elastic.SetURL(fmt.Sprintf("http://%s:%s", cfg.ElasticHost, cfg.ElasticPort)),
 		elastic.SetSniff(false),
-		elastic.SetTraceLog(newLogger(logger)),
 	)
+
+	if cfg.TraceElasticQueries {
+		opts = append(opts, elastic.SetTraceLog(newLogger(logger)))
+	}
+
+	client, err := elastic.NewClient(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при подключении к Elastic: %w", err)
 	}

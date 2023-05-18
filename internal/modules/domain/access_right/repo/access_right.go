@@ -4,6 +4,7 @@ import (
 	"calend/internal/models/access"
 	"calend/internal/modules/db"
 	"calend/internal/modules/db/ent"
+	"calend/internal/modules/db/ent/accessright"
 	"calend/internal/modules/domain/access_right/dto"
 	"context"
 )
@@ -25,6 +26,15 @@ func (r *AccessRightRepo) GetByCode(ctx context.Context, code access.Type) (*dto
 	}
 
 	return ToAccessRightDTO(ar), nil
+}
+
+func (r *AccessRightRepo) ListByCodes(ctx context.Context, codes []access.Type) (dto.AccessRights, error) {
+	ars, err := r.client.AccessRight.Query().Where(accessright.IDIn(codes...)).All(ctx)
+	if err != nil {
+		return nil, db.WrapError(err)
+	}
+
+	return ToAccessRightDTOs(ars), nil
 }
 
 func (r *AccessRightRepo) List(ctx context.Context) (dto.AccessRights, error) {

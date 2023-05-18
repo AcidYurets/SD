@@ -11,6 +11,7 @@ import (
 type IUserRepo interface {
 	GetByUuid(ctx context.Context, uuid string) (*dto.User, error)
 	List(ctx context.Context) (dto.Users, error)
+	ListByUuids(ctx context.Context, uuids []string) (dto.Users, error)
 	Update(ctx context.Context, uuid string, dtm *dto.UpdateUser) (*dto.User, error)
 	Delete(ctx context.Context, uuid string) error
 	Restore(ctx context.Context, uuid string) (*dto.User, error)
@@ -28,6 +29,10 @@ func NewUserService(repo IUserRepo) *UserService {
 
 func (r *UserService) GetByUuid(ctx context.Context, uuid string) (*dto.User, error) {
 	return r.repo.GetByUuid(ctx, uuid)
+}
+
+func (r *UserService) ListByUuids(ctx context.Context, uuids []string) (dto.Users, error) {
+	return r.repo.ListByUuids(ctx, uuids)
 }
 
 func (r *UserService) List(ctx context.Context) (dto.Users, error) {

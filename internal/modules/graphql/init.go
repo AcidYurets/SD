@@ -3,6 +3,7 @@ package graphql
 import (
 	"calend/internal/models/roles"
 	"calend/internal/models/session"
+	"calend/internal/modules/config"
 	"calend/internal/modules/domain/auth/service"
 	"calend/internal/modules/graphql/generated"
 	"calend/internal/modules/graphql/resolvers"
@@ -21,7 +22,12 @@ import (
 
 //go:generate go run -mod=mod github.com/99designs/gqlgen@v0.17.29
 
-func RegisterGraphQL(router *mux.Router, resolver *resolvers.Resolver, authService *service.AuthService, logger *zap.Logger) {
+func RegisterGraphQL(router *mux.Router,
+	resolver *resolvers.Resolver,
+	authService *service.AuthService,
+	logger *zap.Logger,
+	cfg config.Config) {
+
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{
 		Resolvers: resolver,
 	}))
@@ -43,6 +49,11 @@ func RegisterGraphQL(router *mux.Router, resolver *resolvers.Resolver, authServi
 	srv.AroundOperations(injectLogger(logger))
 	// queryLogger последний, т.к. именно он выполняет саму операцию
 	srv.AroundOperations(queryLogger(logger))
+
+	// Middleware для замеров времени, если указана соответствующая опция
+	if cfg.TimeEval {
+		srv.AroundResponses(timeEvaluator())
+	}
 
 	// Раздаем содержимое папки static с gql песочницей
 	router.PathPrefix("/sandbox").Handler(http.FileServer(http.Dir("./static")))
@@ -130,5 +141,19 @@ func queryLogger(lg *zap.Logger) graphql.OperationMiddleware {
 		return func(_ context.Context) *graphql.Response {
 			return resp
 		}
+	}
+}
+
+func timeEvaluator() graphql.ResponseMiddleware {
+	return func(ctx context.Context, next graphql.ResponseHandler) *graphql.Response {
+		var start, stop time.Time
+
+		start = time.Now()
+		resp := next(ctx)
+		stop = time.Now()
+
+		fmt.Printf("Time: %s\n", stop.Sub(start).String())
+
+		return resp
 	}
 }
