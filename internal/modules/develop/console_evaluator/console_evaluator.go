@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"go.uber.org/fx"
+	"os"
+	"time"
 )
 
 func Eval(
@@ -42,11 +44,24 @@ func evaluate(
 	}
 	ctx := makeCtxByUser(user)
 
+	file, err := os.Create("evaluations2.txt")
+	if err != nil {
+		fmt.Printf("ошибка создания файла: %s", err)
+	}
+	defer file.Close()
+
 	fmt.Println("================== Запускаем замеры поиска ==================")
-	pageSizes := []int{20, 50, 100, 500, 1000, 2000, 5000}
-	count := 10
+	pageSizes := []int{5, 10, 20, 50, 100, 200, 400, 500, 1000, 2000, 5000}
+	count := 100
+
+	_, err = file.Write([]byte(fmt.Sprintf("%5s%15s%15s\n", "Count", "DB", "Elastic")))
+	if err != nil {
+		fmt.Printf("ошибка записи в файл: %s", err)
+	}
 
 	for _, pageSize := range pageSizes {
+		var sumDB time.Duration
+		var sumElastic time.Duration
 		for i := 0; i < count; i++ {
 			evaluationRequest := &evaluator.EvaluationRequest{PageSize: pageSize}
 			res, err := eval.EvaluateSearchEvents(ctx, evaluationRequest)
@@ -54,7 +69,15 @@ func evaluate(
 				fmt.Printf("ошибка выполнения замеров поиска: %s", err)
 			}
 
-			fmt.Printf("%d page size, №%d: %s\n", pageSize, i, res)
+			sumDB += res.DurationDB
+			sumElastic += res.DurationElastic
+		}
+
+		resDB := (sumDB / time.Duration(count)).Microseconds()
+		resElastic := (sumElastic / time.Duration(count)).Microseconds()
+		_, err = file.Write([]byte(fmt.Sprintf("%5d%15d%15d\n", pageSize, resDB, resElastic)))
+		if err != nil {
+			fmt.Printf("ошибка записи в файл: %s", err)
 		}
 	}
 

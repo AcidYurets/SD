@@ -14,8 +14,8 @@
       <env name="SEARCH_SERVICE" value="elastic" />
       <env name="SECRET" value="123" />
       <env name="TIME_EVAL" value="true" />
-      <env name="TRACE_EKASTIC_QUERIES" value="true" />
-      <env name="TRACE_SQL_COMMANDS" value="true" />
+      <env name="TRACE_ELASTIC_QUERIES" value="false" />
+      <env name="TRACE_SQL_COMMANDS" value="false" />
     </envs>
     <EXTENSION ID="software.aws.toolkits.jetbrains.core.execution.GoAwsConnectionRunConfigurationExtension">
       <option name="credential" />
