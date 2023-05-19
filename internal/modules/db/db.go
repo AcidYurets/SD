@@ -105,8 +105,8 @@ func InvokeDBClient(
 
 	_ = interceptor
 	_ = hook
-	//client.Intercept(interceptor)
-	//client.Use(hook)
+	client.Intercept(interceptor)
+	client.Use(hook)
 
 	lifecycle.Append(fx.Hook{
 		OnStop: func(context.Context) error {

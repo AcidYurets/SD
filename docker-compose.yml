@@ -11,6 +11,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      elastic:
+        condition: service_healthy
 
   postgres:
     image: postgres:15
@@ -45,3 +47,9 @@ services:
     ports:
       - "15001:9200"
       - "15002:9300"
+    healthcheck:
+      test: curl -f -X GET "localhost:9200/_cluster/health?wait_for_status=green&timeout=1s" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
