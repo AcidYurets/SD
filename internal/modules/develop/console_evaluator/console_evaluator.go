@@ -44,20 +44,21 @@ func evaluate(
 	}
 	ctx := makeCtxByUser(user)
 
-	file, err := os.Create("evaluations2.txt")
+	dbFile, err := os.Create("db_filters.tsv")
 	if err != nil {
 		fmt.Printf("ошибка создания файла: %s", err)
 	}
-	defer file.Close()
+	defer dbFile.Close()
+
+	elasticFile, err := os.Create("elastic_filters.tsv")
+	if err != nil {
+		fmt.Printf("ошибка создания файла: %s", err)
+	}
+	defer elasticFile.Close()
 
 	fmt.Println("================== Запускаем замеры поиска ==================")
-	pageSizes := []int{5, 10, 20, 50, 100, 200, 400, 500, 1000, 2000, 5000}
-	count := 100
-
-	_, err = file.Write([]byte(fmt.Sprintf("%5s%15s%15s\n", "Count", "DB", "Elastic")))
-	if err != nil {
-		fmt.Printf("ошибка записи в файл: %s", err)
-	}
+	pageSizes := []int{10, 50, 100, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000}
+	count := 5
 
 	for _, pageSize := range pageSizes {
 		var sumDB time.Duration
@@ -73,9 +74,14 @@ func evaluate(
 			sumElastic += res.DurationElastic
 		}
 
-		resDB := (sumDB / time.Duration(count)).Microseconds()
-		resElastic := (sumElastic / time.Duration(count)).Microseconds()
-		_, err = file.Write([]byte(fmt.Sprintf("%5d%15d%15d\n", pageSize, resDB, resElastic)))
+		resDB := (float64(sumDB) / float64(count)) / 1e6
+		resElastic := (float64(sumElastic) / float64(count)) / 1e6
+
+		_, err = dbFile.Write([]byte(fmt.Sprintf("%5d%15f\n", pageSize, resDB)))
+		if err != nil {
+			fmt.Printf("ошибка записи в файл: %s", err)
+		}
+		_, err = elasticFile.Write([]byte(fmt.Sprintf("%5d%15f\n", pageSize, resElastic)))
 		if err != nil {
 			fmt.Printf("ошибка записи в файл: %s", err)
 		}

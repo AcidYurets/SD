@@ -79,6 +79,7 @@ func (r *SearchRepo) buildEventFilters(f *dto.EventFilter) *elastic.BoolQuery {
 	builder.AddField("Creator.Login", f.CreatorLogin)
 	builder.AddField("Tags.Name", f.TagName)
 	builder.AddField("Invitations.UserUuid", f.InvitedUserUuid)
+	builder.AddField("CreatorUuid Invitations.UserUuid", f.CreatorOrInvitedUserUuid)
 	builder.AddField(strings.Join(ftsSearch, " "), f.FTSearchStr)
 
 	return builder.Build()

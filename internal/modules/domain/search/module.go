@@ -2,6 +2,7 @@ package search
 
 import (
 	"calend/internal/modules/config"
+	"calend/internal/modules/domain/event/repo"
 	"calend/internal/modules/domain/search/repo_db"
 	"calend/internal/modules/domain/search/repo_elastic"
 	"calend/internal/modules/domain/search/service"
@@ -14,7 +15,13 @@ var (
 		repo_db.Module,
 		repo_elastic.Module,
 
-		fx.Provide(ProvideSearchRepo),
+		fx.Provide(
+			ProvideSearchRepo,
+			fx.Annotate(
+				func(r *repo.EventRepo) *repo.EventRepo { return r },
+				fx.As(new(service.IEventRepo)),
+			),
+		),
 	)
 
 	Invokables = fx.Options(

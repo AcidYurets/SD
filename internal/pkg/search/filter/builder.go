@@ -12,4 +12,6 @@ type Builder interface {
 	From(field string, value *time.Time)     // По дате от
 	To(field string, value *time.Time)       // По дате до
 	Range(field string, from, to *time.Time) // Между
+
+	EqOr(fields string, value interface{}) // По содержанию значения в любом из нескольких полей
 }

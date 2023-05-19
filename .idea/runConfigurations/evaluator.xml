@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="server" type="GoApplicationRunConfiguration" factoryName="Go Application">
+  <configuration default="false" name="evaluator" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="main_project" />
     <working_directory value="$PROJECT_DIR$" />
     <envs>
@@ -11,11 +11,11 @@
       <env name="HTTP_SERVER_HOST" value="[::]" />
       <env name="HTTP_SERVER_PORT" value="4040" />
       <env name="LOG_LEVEL" value="debug" />
-      <env name="SEARCH_SERVICE" value="elastic1" />
+      <env name="SEARCH_SERVICE" value="elastic" />
       <env name="SECRET" value="123" />
       <env name="TIME_EVAL" value="false" />
-      <env name="TRACE_ELASTIC_QUERIES" value="true" />
-      <env name="TRACE_SQL_COMMANDS" value="true" />
+      <env name="TRACE_ELASTIC_QUERIES" value="false" />
+      <env name="TRACE_SQL_COMMANDS" value="false" />
     </envs>
     <EXTENSION ID="software.aws.toolkits.jetbrains.core.execution.GoAwsConnectionRunConfigurationExtension">
       <option name="credential" />
@@ -23,7 +23,7 @@
       <option name="useCurrentConnection" value="false" />
     </EXTENSION>
     <kind value="PACKAGE" />
-    <package value="calend/cmd/server" />
+    <package value="calend/cmd/evaluator" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$/cmd/server/main.go" />
     <method v="2" />

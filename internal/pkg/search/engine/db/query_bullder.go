@@ -83,6 +83,24 @@ func (b *QueryBuilder) Ts(field string, value string) {
 	}
 }
 
+func (b *QueryBuilder) EqOr(field string, value interface{}) {
+	fields := strings.Fields(field)
+	if len(fields) == 0 {
+		return
+	}
+
+	preds := make([]types.Predicate, 0)
+	for _, field := range fields {
+		pred := sql.FieldEQ(lastElem(field), value)
+		wrap, ok := b.wrappers[field]
+		if ok {
+			pred = wrap(pred)
+		}
+		preds = append(preds, pred)
+	}
+	b.add(or(preds...))
+}
+
 func (b *QueryBuilder) Eq(field string, value interface{}) {
 	pred := sql.FieldEQ(lastElem(field), value)
 	wrap, ok := b.wrappers[field]

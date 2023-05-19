@@ -31,6 +31,21 @@ func (b *QueryBuilder) Build() *elastic.BoolQuery {
 	return elastic.NewBoolQuery().Filter(b.filters...)
 }
 
+func (b *QueryBuilder) EqOr(field string, value interface{}) {
+	fields := strings.Fields(field)
+	if len(fields) == 0 {
+		return
+	}
+
+	queries := make([]elastic.Query, 0)
+	for _, field := range fields {
+		keywordField := trimKeyword(field) + ".keyword"
+		queries = append(queries, elastic.NewTermQuery(keywordField, value))
+	}
+
+	b.add(elastic.NewBoolQuery().Should(queries...))
+}
+
 func (b *QueryBuilder) Eq(field string, value interface{}) {
 	keywordField := trimKeyword(field) + ".keyword"
 	b.add(elastic.NewTermQuery(keywordField, value))

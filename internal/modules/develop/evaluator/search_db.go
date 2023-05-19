@@ -24,9 +24,9 @@ func (r *Evaluator) searchEventsDB(ctx context.Context, searchRequest *dto.Event
 		Order(sortPredicates...).
 		Limit(limit).
 		Offset(offset).
-		WithInvitations().
-		WithTags().
-		WithCreator().
+		//WithInvitations().
+		//WithTags().
+		//WithCreator().
 		All(ctx)
 	if err != nil {
 		return nil, db.WrapError(err)

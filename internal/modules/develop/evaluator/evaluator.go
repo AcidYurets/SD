@@ -5,7 +5,9 @@ import (
 	event_elastic "calend/internal/modules/domain/event/elastic"
 	"calend/internal/modules/domain/search/dto"
 	"calend/internal/modules/elastic/index"
+	"calend/internal/pkg/search/filter"
 	"calend/internal/pkg/search/paginate"
+	"calend/internal/pkg/search/sort"
 	"calend/internal/utils/ptr"
 	"context"
 	"fmt"
@@ -32,28 +34,28 @@ func NewEvaluator(dbClient *ent.Client, elasticClient *elastic.Client) *Evaluato
 func (r *Evaluator) EvaluateSearchEvents(ctx context.Context, evaluationRequest *EvaluationRequest) (*EvaluationResults, error) {
 	res := &EvaluationResults{}
 
-	//sortDirection := sort.DirectionAsc
+	sortDirection := sort.DirectionAsc
 	searchRequest := &dto.EventSearchRequest{
-		//Filter: &dto.EventFilter{
-		//	FTSearchStr: &filter.FTSQueryFilter{
-		//		Str: "Соб",
-		//	},
-		//	CreatorLogin: &filter.TextQueryFilter{
-		//		Ts: ptr.String("Us"),
-		//	},
-		//	Description: &filter.TextQueryFilter{
-		//		Ts: ptr.String("Опи"),
-		//	},
-		//	TagName: &filter.TextQueryFilter{
-		//		Ts: ptr.String("Тег"),
-		//	},
-		//	InvitedUserUuid: &filter.IDQueryFilter{
-		//		Nin: []string{"3075060f-9211-40c9-928e-404b2ff866f2"},
-		//	},
-		//},
-		//Sort: &dto.EventSort{
-		//	CreatorLogin: &sortDirection,
-		//},
+		Filter: &dto.EventFilter{
+			FTSearchStr: &filter.FTSQueryFilter{
+				Str: "Соб",
+			},
+			CreatorLogin: &filter.TextQueryFilter{
+				Ts: ptr.String("Us"),
+			},
+			Description: &filter.TextQueryFilter{
+				Ts: ptr.String("Опи"),
+			},
+			TagName: &filter.TextQueryFilter{
+				Ts: ptr.String("Тег"),
+			},
+			InvitedUserUuid: &filter.IDQueryFilter{
+				Nin: []string{"3075060f-9211-40c9-928e-404b2ff866f2"},
+			},
+		},
+		Sort: &dto.EventSort{
+			CreatorLogin: &sortDirection,
+		},
 		Paginate: &paginate.ByPage{
 			Page:     ptr.Int(1),
 			PageSize: ptr.Int(evaluationRequest.PageSize),

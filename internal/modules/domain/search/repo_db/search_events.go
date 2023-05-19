@@ -81,6 +81,7 @@ func (r *SearchRepo) buildEventFilters(f *dto.EventFilter) []predicate.Event {
 	builder.AddField("creator.login", f.CreatorLogin)
 	builder.AddField("tags.name", f.TagName)
 	builder.AddField("invitations.user_uuid", f.InvitedUserUuid)
+	builder.AddField("creator_uuid invitations.user_uuid", f.CreatorOrInvitedUserUuid)
 	builder.AddField(strings.Join(ftsSearch, " "), f.FTSearchStr)
 
 	predicates := builder.Build()
