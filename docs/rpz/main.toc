@@ -1,0 +1,38 @@
+\babel@toc {russian}{}\relax 
+\contentsline {section}{ВВЕДЕНИЕ}{7}{Doc-Start}%
+\contentsline {section}{\numberline {1}Аналитическая часть}{8}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Существующие решения}{8}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Формализация задачи}{9}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Формализация данных}{10}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}Формализация категорий пользователя}{10}{subsection.1.4}%
+\contentsline {subsection}{\numberline {1.5}Классификация СУБД}{15}{subsection.1.5}%
+\contentsline {subsubsection}{\numberline {1.5.1}По модели хранения}{15}{subsubsection.1.5.1}%
+\contentsline {subsubsection}{\numberline {1.5.2}По способу доступа к данным}{17}{subsubsection.1.5.2}%
+\contentsline {subsubsection}{\numberline {1.5.3}Выбор модели базы данных}{17}{subsubsection.1.5.3}%
+\contentsline {section}{\numberline {2}Конструкторская часть}{19}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Описание сущностей}{19}{subsection.2.1}%
+\contentsline {subsubsection}{\numberline {2.1.1}Таблица users}{19}{subsubsection.2.1.1}%
+\contentsline {subsubsection}{\numberline {2.1.2}Таблица tags}{19}{subsubsection.2.1.2}%
+\contentsline {subsubsection}{\numberline {2.1.3}Таблица events}{20}{subsubsection.2.1.3}%
+\contentsline {subsubsection}{\numberline {2.1.4}Таблица events\_tags}{20}{subsubsection.2.1.4}%
+\contentsline {subsubsection}{\numberline {2.1.5}Таблица access\_rights}{20}{subsubsection.2.1.5}%
+\contentsline {subsubsection}{\numberline {2.1.6}Таблица invitations}{21}{subsubsection.2.1.6}%
+\contentsline {subsubsection}{\numberline {2.1.7}Схема базы данных}{21}{subsubsection.2.1.7}%
+\contentsline {subsubsection}{\numberline {2.1.8}Схема индекса ElasticSearch}{22}{subsubsection.2.1.8}%
+\contentsline {subsection}{\numberline {2.2}Описание проектируемой процедуры}{27}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Проектирование приложения}{28}{subsection.2.3}%
+\contentsline {section}{\numberline {3}Технологическая часть}{30}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Выбор СУБД}{30}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Выбор поисковой базы данных}{31}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Выбор средств реализации}{31}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Реализация приложения}{31}{subsection.3.4}%
+\contentsline {subsubsection}{\numberline {3.4.1}Описание таблиц базы данных}{32}{subsubsection.3.4.1}%
+\contentsline {subsubsection}{\numberline {3.4.2}Создание процедуры}{33}{subsubsection.3.4.2}%
+\contentsline {subsubsection}{\numberline {3.4.3}Создание ролей и выделение им прав}{34}{subsubsection.3.4.3}%
+\contentsline {subsubsection}{\numberline {3.4.4}Интерфейс приложения}{36}{subsubsection.3.4.4}%
+\contentsline {section}{\numberline {4}Экспериментальная часть}{38}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Технические характеристики}{38}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Время выполнения алгоритмов}{38}{subsection.4.2}%
+\contentsline {section}{ЗАКЛЮЧЕНИЕ}{43}{figure.caption.17}%
+\contentsline {section}{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}{44}{figure.caption.17}%
+\contentsline {section}{ПРИЛОЖЕНИЕ A}{46}{figure.caption.17}%

@@ -1,0 +1,202 @@
+\section{Экспериментальная часть}
+
+В данном разделе проведён сравнительный анализ реализаций сервиса поиска событий с использованием PostgreSQL и ElasticSearch
+
+\subsection{Технические характеристики}
+
+Замеры времени выполнялись на личном ноутбуке. Технические характеристики устройства, на котором выполнялось тестирование представлены далее:
+
+\begin{itemize}[label=---]
+	\item операционная система Windows 10 Домашняя;
+	\item память 16 Гбайт;
+	\item процессор 3.20 ГГц 4‑ядерный процессор Intel Core i5 11-го поколения;
+	\item процессор имеет 4 физических и 8 логических ядер.
+\end{itemize}
+
+Во время замеров ноутбук был включен в сеть электропитания.
+
+\subsection{Время выполнения алгоритмов}
+
+Для замера времени работы алгоритмов использовалась функция \linebreak time.Now() из стандартной библиотеки на Golang.
+
+Для проведения замеров времени поиска с фильтрацией и сортировкой использовался запрос c параметрами, приведенными на листинге \ref{lst:req-f}, а параметры запроса для замеров времени поиска без фильтрации и сортировки приведен на листинге \ref{lst:req-wf}. В обоих приведенных запросах X -- задаваемое количество запрашиваемых записей.
+
+\begin{center}
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+	\begin{lstlisting}[label=lst:req-f,caption=Параметры запроса с указанием фильтрациии и сортировки]
+{
+	"paginate": {
+		"Page": 1,
+		"PageSize": X
+	},
+	"filter":{
+		"FTSearchStr": {
+			"Str": "My"
+		},
+		"CreatorLogin": {
+			"Ts": "Us"
+		},
+		"Description": {
+			"Ts": "Desc"
+		},
+		"TagName": {
+			"Ts": "Teg"
+		}
+	},
+	"sort": {
+		"CreatorLogin": "ASC"
+	}
+}
+	\end{lstlisting}
+\end{center}
+
+\begin{center}
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+	\begin{lstlisting}[label=lst:req-wf,caption=Параметры запроса без указания фильтрациии и сортировки]
+{
+	"paginate": {
+		"Page": 1,
+		"PageSize": X
+	},
+}
+	\end{lstlisting}
+\end{center}
+
+Результаты замеров времени работы реализаций сервиса поиска с использованием PostgreSQL и ElasticSearch приведены в таблице \ref{tbl:time}. На рисунках \ref{fig:time-db} и \ref{fig:time-es} приведена графическая интерпретация замеров времени. В первом столбце таблиц указывается количество запрашиваемых записей, а во втором и третьем --- время поиска с фильтрацией и без фильтрации соответственно. Замеры производились по 500 раз для каждого количества запрашиваемых записей. На момент осуществления замеров в таблице Postgres events было 100000 записей. Столько же документов были и в индексе ElasticSearch events.
+
+\begin{table}[h]
+	\centering
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+	\caption{Результаты замеров времени поиска с использованием PostgreSQL}
+	\label{tbl:time}
+	\begin{tabular}{|c|c|c|}
+		\hline
+		Кол-во записей & С фильтрами, млс & Без фильтров, млс \\ \hline
+		      10       &    13.833706    &    11.289715     \\ \hline
+		      20       &    14.250382    &    11.753059     \\ \hline
+		      50       &    14.960792    &    11.462349     \\ \hline
+		     100       &    16.769814    &    12.062963     \\ \hline
+		     200       &    20.102638    &    14.037806     \\ \hline
+		     300       &    21.950034    &    16.361748     \\ \hline
+		     400       &    28.771323    &    23.641660     \\ \hline
+	\end{tabular}
+\end{table}
+
+\begin{table}[h]
+	\centering
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+	\caption{Результаты замеров времени поиска с использованием ElasticSearch}
+	\label{tbl:time}
+	\begin{tabular}{|c|c|c|}
+		\hline
+		Кол-во записей & С фильтрами, млс & Без фильтров, млс \\ \hline
+		10       &    67.975325   &     51.430142    \\ \hline
+		20       &    69.194931   &     53.183822    \\ \hline
+		50       &    72.861184   &     54.079701    \\ \hline
+		100       &   77.778041    &    57.135915     \\ \hline
+		200       &   86.193629    &    64.008997     \\ \hline
+		300       &   93.549356    &    68.152554     \\ \hline
+		400       &   98.196287    &    71.863563     \\ \hline
+	\end{tabular}
+\end{table}
+
+
+
+\begin{figure}[h]
+	\begin{center}
+		\begin{tikzpicture}
+			\begin{axis}[
+				legend pos = north west,
+				xlabel=Количество запрашиваемых записей,
+				ylabel=Время в миксосекундах,
+				minor tick num = 1,
+				grid = both,
+				major grid style = {lightgray},
+				minor grid style = {lightgray!25},
+				%xtick distance = 50,
+				width = 0.9\textwidth,
+				height = 0.55\textwidth]
+				
+				\addplot[
+				blue,
+				semithick,
+				mark = x,
+				mark size = 3pt,
+				thick,
+				] file {assets/data/db.tsv};
+				
+				\addplot[
+				green,
+				semithick,
+				mark = x,
+				mark size = 3pt,
+				thick,
+				] file {assets/data/db_filters.tsv};
+				
+				\legend{Поиск без фильтрации и сортировки, 	Поиск с фильтрацией и сортировкой}
+			\end{axis}
+		\end{tikzpicture}
+	\end{center}
+	\caption{Зависимость времени выполнения поиска в Postgres в зависимости от запрашиваемого количества записей}
+	\label{fig:time-db}
+\end{figure}
+
+
+\begin{figure}[h]
+	\begin{center}
+		\begin{tikzpicture}
+			\begin{axis}[
+				legend pos = north west,
+				xlabel=Количество запрашиваемых записей,
+				ylabel=Время в миксосекундах,
+				minor tick num = 1,
+				grid = both,
+				major grid style = {lightgray},
+				minor grid style = {lightgray!25},
+				%xtick distance = 50,
+				width = 0.9\textwidth,
+				height = 0.55\textwidth]
+				
+				\addplot[
+				blue,
+				semithick,
+				mark = x,
+				mark size = 3pt,
+				thick,
+				] file {assets/data/elastic.tsv};
+				
+				\addplot[
+				green,
+				semithick,
+				mark = x,
+				mark size = 3pt,
+				thick,
+				] file {assets/data/elastic_filters.tsv};
+				
+				\legend{Поиск без фильтрации и сортировки, 	Поиск с фильтрацией и сортировкой}
+			\end{axis}
+		\end{tikzpicture}
+	\end{center}
+	\caption{Зависимость времени выполнения поиска в ElasticSearch в зависимости от запрашиваемого количества записей}
+	\label{fig:time-es}
+\end{figure}
+
+\clearpage
+
+Из результатов видно, что Postgres с фильтрами дольше примерно на 140\%. Это обусловлено необходимостью применения фильтров к различным полям и необходимостью дополнительных JOIN-ов, т.к. некоторые фильтры используют данные из связанных таблиц.
+
+Elastic с фильтрами дольше примерно на 130\%. Это обусловлено необходимостью применения фильтров к различным полям и необходимостью сортировки результатов.
+
+Можно заметить, что в среднем Elastic работает медленнее Postgres в 4 раза. Это может быть связанно с тем, что ElasticSearch использует протокол <<HyperText Transfer Protocol>> (HTTP) \cite{http}, в то время как Postgres взаимодействует с приложением по протоколу <<Transmission Control Protocol>> (TCP), который передает данные быстрее. 
+
+\subsection*{Вывод}
+Несмотря на необходимость выборки данных из нескольких таблиц, поиск событий в Postgres оказался более эффективным, чем поиск событий в \linebreak ElasticSearch примерно в 4 раза. 
+
+Таким образом, для реализации сервиса поиска событий оптимальнее использовать Postgres, чем ElasticSearch.
+
+
+
+
+
+
+

@@ -57,7 +57,7 @@ func evaluate(
 	defer elasticFile.Close()
 
 	fmt.Println("================== Запускаем замеры поиска ==================")
-	pageSizes := []int{10, 50, 100, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000}
+	pageSizes := []int{10, 20, 50, 100, 200, 300, 400}
 	count := 5
 
 	for _, pageSize := range pageSizes {

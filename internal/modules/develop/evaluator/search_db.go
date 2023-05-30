@@ -3,7 +3,10 @@ package evaluator
 import (
 	"calend/internal/modules/db"
 	event_ent "calend/internal/modules/db/ent/event"
+	"calend/internal/modules/db/ent/invitation"
 	"calend/internal/modules/db/ent/predicate"
+	"calend/internal/modules/db/ent/tag"
+	"calend/internal/modules/db/ent/user"
 	ev_dto "calend/internal/modules/domain/event/dto"
 	"calend/internal/modules/domain/event/repo"
 	"calend/internal/modules/domain/search/dto"
@@ -19,15 +22,38 @@ func (r *Evaluator) searchEventsDB(ctx context.Context, searchRequest *dto.Event
 	sortPredicates := r.buildEventSortsDB(searchRequest.Sort)
 	limit, offset := paginate.BuildPaginate(searchRequest.Paginate)
 
-	events, err := r.dbClient.Event.Query().
+	eventsQuery := r.dbClient.Event.Query().
 		Where(filterPredicates...).
 		Order(sortPredicates...).
 		Limit(limit).
-		Offset(offset).
-		//WithInvitations().
-		//WithTags().
-		//WithCreator().
-		All(ctx)
+		Offset(offset)
+
+	events, err := eventsQuery.All(ctx)
+	if err != nil {
+		return nil, db.WrapError(err)
+	}
+
+	eventUuids := make([]string, len(events))
+	for i, event := range events {
+		eventUuids[i] = event.ID
+	}
+
+	creatorUuids := make([]string, len(events))
+	for i, event := range events {
+		creatorUuids[i] = event.CreatorUUID
+	}
+
+	_, err = r.dbClient.Invitation.Query().Where(invitation.EventUUIDIn(eventUuids...)).All(ctx)
+	if err != nil {
+		return nil, db.WrapError(err)
+	}
+
+	_, err = r.dbClient.Tag.Query().Where(tag.HasEventsWith(event_ent.IDIn(eventUuids...))).All(ctx)
+	if err != nil {
+		return nil, db.WrapError(err)
+	}
+
+	_, err = r.dbClient.User.Query().Where(user.IDIn(creatorUuids...)).All(ctx)
 	if err != nil {
 		return nil, db.WrapError(err)
 	}
